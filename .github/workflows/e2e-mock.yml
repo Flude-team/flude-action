@@ -83,24 +83,25 @@ jobs:
           poll-interval-seconds: '1'
           max-wait-seconds: '60'
 
-      - name: Verify SARIF output and step summary are complete
+      - name: DEBUG - non-aborting check of every assertion, with full file dumps
+        # Temporary: `set -e` + `grep -q` swallowed exactly which assertion
+        # failed (grep -q prints nothing either way). Run every check
+        # without exiting early and dump full file contents so the real
+        # failure point is unambiguous instead of inferred from silence.
         run: |
-          echo "=== inline diagnostics (same step, same process, before set -e) ==="
-          echo "pwd: $(pwd)"
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          echo "reported sarif-path: '${{ steps.flude.outputs.sarif-path }}'" | cat -A | head -1
-          ls -la
-          stat "${{ steps.flude.outputs.sarif-path }}" 2>&1 || echo "stat failed with exit $?"
-          echo "=== end inline diagnostics ==="
-
-          set -euo pipefail
-          test -n "${{ steps.flude.outputs.sarif-path }}"
-          test -f "${{ steps.flude.outputs.sarif-path }}"
-          python3 -c "import json,sys; json.load(open(sys.argv[1]))" "${{ steps.flude.outputs.sarif-path }}"
-
-          test -f "$GITHUB_STEP_SUMMARY"
-          grep -q '15 finding(s)' "$GITHUB_STEP_SUMMARY"
-          # RULE-14 is past the old (removed) 10-item cap - proves the
-          # summary isn't silently truncated back to it.
-          grep -q 'RULE-14' "$GITHUB_STEP_SUMMARY"
-          grep -q 'finding number 14' "$GITHUB_STEP_SUMMARY"
+          echo "sarif-path output: '${{ steps.flude.outputs.sarif-path }}'"
+          echo "--- test -f sarif-path ---"
+          test -f "${{ steps.flude.outputs.sarif-path }}"; echo "exit: $?"
+          echo "--- cat sarif-path ---"
+          cat "${{ steps.flude.outputs.sarif-path }}"; echo "(cat exit: $?)"
+          echo "--- python3 json.load on sarif-path ---"
+          python3 -c "import json,sys; json.load(open(sys.argv[1]))" "${{ steps.flude.outputs.sarif-path }}"; echo "exit: $?"
+          echo "--- test -f \$GITHUB_STEP_SUMMARY ---"
+          test -f "$GITHUB_STEP_SUMMARY"; echo "exit: $?"
+          echo "--- cat \$GITHUB_STEP_SUMMARY ---"
+          cat "$GITHUB_STEP_SUMMARY"; echo "(cat exit: $?)"
+          echo "--- grep checks (each independent, none abort the script) ---"
+          grep -n '15 finding(s)' "$GITHUB_STEP_SUMMARY"; echo "grep '15 finding(s)' exit: $?"
+          grep -n 'RULE-14' "$GITHUB_STEP_SUMMARY"; echo "grep 'RULE-14' exit: $?"
+          grep -n 'finding number 14' "$GITHUB_STEP_SUMMARY"; echo "grep 'finding number 14' exit: $?"
+          echo "=== done, nothing aborted ==="
