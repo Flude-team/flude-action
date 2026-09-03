@@ -1,0 +1,50 @@
+name: E2E against a mock control-plane
+
+# Runs the action for real (via `uses: ./`), against a local mock standing in
+# for the not-yet-built DEL-B23 control-plane. This satisfies DEL-B22's
+# acceptance criterion (job submitted, polled, downloaded) for everything the
+# thin client itself owns - it does NOT exercise the real control-plane,
+# free-gate logic, or GCS. See README.md's "What this repo does and does not
+# verify" section.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Start mock control-plane
+        run: |
+          node test-support/start-mock-server.mjs &
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8787/fake-results/warmup >/dev/null 2>&1; then break; fi
+            sleep 0.5
+          done
+
+      - name: Run flude-action against the mock control-plane
+        id: flude
+        uses: ./
+        with:
+          api-token: 'test-token'
+          api-base-url: 'http://127.0.0.1:8787'
+          format: 'markdown'
+          poll-interval-seconds: '1'
+          max-wait-seconds: '60'
+
+      - name: Verify outputs
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.flude.outputs.job-id }}"
+          test "${{ steps.flude.outputs.status }}" = "succeeded"
+          test -n "${{ steps.flude.outputs.result-url }}"
+          test -f "${{ steps.flude.outputs.result-path }}"
+          echo "job-id: ${{ steps.flude.outputs.job-id }}"
+          echo "result-path: ${{ steps.flude.outputs.result-path }}"

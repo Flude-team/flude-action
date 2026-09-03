@@ -1,0 +1,50 @@
+name: 'Flude Docs'
+description: 'Generate documentation with Flude via the Flude SaaS control-plane (thin client, no engine bundled)'
+branding:
+  icon: 'book-open'
+  color: 'blue'
+inputs:
+  api-token:
+    description: >
+      Flude API key (a Clerk API Key created once at app.flude.guide and stored as a
+      repository or organization secret). Sent to the control-plane as a Bearer token.
+    required: true
+  api-base-url:
+    description: >
+      Base URL of the Flude SaaS control-plane API. There is no public control-plane yet
+      (see DEL-B23) - point this at your own control-plane or local mock while developing
+      against this action.
+    required: true
+  format:
+    description: "Output format: 'markdown' or 'html'."
+    required: false
+    default: 'markdown'
+  strict:
+    description: 'Enable Strict Compilation Mode.'
+    required: false
+    default: 'false'
+  poll-interval-seconds:
+    description: 'How often to poll GET /jobs/{id} for job status.'
+    required: false
+    default: '10'
+  max-wait-seconds:
+    description: >
+      Client-side safety-net timeout for polling. The authoritative job timeout (currently
+      10 minutes) is enforced server-side by the control-plane; this only guards against the
+      server never reporting a terminal status at all.
+    required: false
+    default: '900'
+outputs:
+  job-id:
+    description: 'The job ID assigned by the control-plane.'
+  status:
+    description: >
+      Terminal job status (e.g. succeeded, failed, rejected_too_large,
+      rejected_organization, rejected_private).
+  result-url:
+    description: 'Signed, short-TTL GCS URL to the result archive. It expires quickly - download it immediately.'
+  result-path:
+    description: 'Local path to the downloaded result archive.'
+runs:
+  using: 'node20'
+  main: 'src/index.js'

@@ -1,0 +1,13 @@
+{
+  "name": "flude-action",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Thin GitHub Action client for the Flude SaaS control-plane (no engine bundled).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
