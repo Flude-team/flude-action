@@ -51,6 +51,13 @@ outputs:
       archive root - a best-effort assumption, see README.md), if one was found. Feed this into
       github/codeql-action/upload-sarif as a separate workflow step to publish it to Code
       Scanning. Empty if no SARIF report was found in the archive.
+  summary-path:
+    description: >
+      Local path to the same markdown findings report already appended to $GITHUB_STEP_SUMMARY,
+      as a plain file. $GITHUB_STEP_SUMMARY is allocated fresh per step by the runner, so a later
+      step in your workflow can't read this step's contribution back through that environment
+      variable - use this output instead (e.g. to post it as a PR comment). Empty if no SARIF
+      report was found in the archive.
 runs:
   using: 'node20'
   main: 'src/index.js'

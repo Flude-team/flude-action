@@ -48,7 +48,10 @@ test('reportGitHubFindings extracts SARIF, annotates errors, and writes the step
     const capture = captureConsole()
     let result
     try {
-      result = await reportGitHubFindings(archivePath, { sarifOutputPath: join(dir, 'flude-report.sarif') })
+      result = await reportGitHubFindings(archivePath, {
+        sarifOutputPath: join(dir, 'flude-report.sarif'),
+        summaryOutputPath: join(dir, 'flude-summary.md'),
+      })
     } finally {
       capture.restore()
       delete process.env.GITHUB_STEP_SUMMARY
@@ -56,6 +59,7 @@ test('reportGitHubFindings extracts SARIF, annotates errors, and writes the step
 
     assert.equal(result.findings.length, 3)
     assert.ok(result.sarifPath)
+    assert.ok(result.summaryPath)
 
     const extractedSarif = await readFile(result.sarifPath, 'utf8')
     assert.deepEqual(JSON.parse(extractedSarif), JSON.parse(sarif))
@@ -64,11 +68,19 @@ test('reportGitHubFindings extracts SARIF, annotates errors, and writes the step
     assert.ok(capture.logs.some((line) => line === '::error::[ERR2] second error'))
     assert.ok(!capture.logs.some((line) => line.includes('WARN1')), 'warning-level findings should not get an ::error:: annotation')
 
-    const summary = await readFile(summaryPath, 'utf8')
-    assert.match(summary, /3 finding\(s\)/)
-    assert.ok(summary.includes('first error'))
-    assert.ok(summary.includes('a warning'))
-    assert.ok(summary.includes('second error'))
+    // Written to $GITHUB_STEP_SUMMARY (the real, intended GitHub UI mechanism)...
+    const stepSummary = await readFile(summaryPath, 'utf8')
+    assert.match(stepSummary, /3 finding\(s\)/)
+    assert.ok(stepSummary.includes('first error'))
+    assert.ok(stepSummary.includes('a warning'))
+    assert.ok(stepSummary.includes('second error'))
+
+    // ...AND to a plain, persistent file (result.summaryPath) with identical
+    // content - $GITHUB_STEP_SUMMARY is fresh per step, so a later workflow
+    // step can't read this step's contribution back through that env var;
+    // this file is how it verifies (and how any other consumer would too).
+    const persistedSummary = await readFile(result.summaryPath, 'utf8')
+    assert.equal(persistedSummary.trim(), stepSummary.trim())
   })
 })
 
@@ -86,6 +98,7 @@ test('reportGitHubFindings degrades gracefully when the archive has no report.sa
     }
 
     assert.equal(result.sarifPath, null)
+    assert.equal(result.summaryPath, null)
     assert.deepEqual(result.findings, [])
     assert.ok(capture.logs.some((line) => line.includes('::warning::') && line.includes('report.sarif')))
   })
@@ -105,6 +118,7 @@ test('reportGitHubFindings degrades gracefully when the archive is not a ZIP at 
     }
 
     assert.equal(result.sarifPath, null)
+    assert.equal(result.summaryPath, null)
     assert.deepEqual(result.findings, [])
   })
 })

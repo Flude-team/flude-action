@@ -73,6 +73,7 @@ create once, by hand.
 | `result-url` | Signed, short-TTL GCS URL. **Download it immediately** — see "Downloading the result" below. |
 | `result-path` | Local path to the downloaded archive. |
 | `sarif-path` | Local path to a SARIF report extracted from the archive, if one was found. Empty otherwise — see "GitHub-specific reporting" below. |
+| `summary-path` | Local path to the same markdown findings report already appended to `$GITHUB_STEP_SUMMARY`, as a plain file. Empty if no SARIF report was found. |
 
 ### Downloading the result
 
@@ -117,6 +118,18 @@ When `report.sarif` **is** found:
    purpose, specifically so the step summary is the one channel guaranteed to
    show the complete list regardless of how many findings there are or how
    GitHub's UI happens to render inline annotations.
+
+   **`$GITHUB_STEP_SUMMARY` is allocated fresh per step by the runner** (the
+   same ephemeral-per-step design as `$GITHUB_OUTPUT`) — the runner
+   aggregates every step's contribution into the job's summary page for you,
+   but a *later* step in your own workflow reading `$GITHUB_STEP_SUMMARY`
+   only ever sees its own empty file, never this step's write. If you need
+   the raw markdown in a later step (to post it as a PR comment, say), use
+   the `summary-path` output instead — a plain file with identical content
+   that actually persists across steps. Found this the hard way: an earlier
+   version of this repo's own `e2e-sarif` CI job failed only on real
+   GitHub-hosted runners, never locally, by making exactly this mistake in
+   its own verification step.
 
 ### Timeouts
 

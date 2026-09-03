@@ -75,9 +75,12 @@ export async function run() {
   setOutput('result-path', destPath)
   logNotice(`Result downloaded to ${destPath}`)
 
-  const { sarifPath } = await reportGitHubFindings(destPath)
+  const { sarifPath, summaryPath } = await reportGitHubFindings(destPath)
   if (sarifPath) {
     setOutput('sarif-path', sarifPath)
+  }
+  if (summaryPath) {
+    setOutput('summary-path', summaryPath)
   }
 }
 
