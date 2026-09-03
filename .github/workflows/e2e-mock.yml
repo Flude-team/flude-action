@@ -83,27 +83,16 @@ jobs:
           poll-interval-seconds: '1'
           max-wait-seconds: '60'
 
-      - name: DEBUG - locate where the action actually wrote its files
-        # Temporary, for diagnosing a real CI-only failure where the Verify
-        # step's `test -f` on a path the action itself just reported cannot
-        # find the file - not reproducible in local Docker. Remove once the
-        # root cause is confirmed and the real fix lands.
-        run: |
-          echo "pwd: $(pwd)"
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          echo "reported sarif-path: '${{ steps.flude.outputs.sarif-path }}'"
-          echo "reported result-path: '${{ steps.flude.outputs.result-path }}'"
-          echo "--- ls -la \$(pwd) ---"
-          ls -la
-          echo "--- ls -la \$GITHUB_WORKSPACE ---"
-          ls -la "$GITHUB_WORKSPACE"
-          echo "--- find / for any .sarif/.zip file (depth 8, errors suppressed) ---"
-          find / -maxdepth 8 \( -iname '*.sarif' -o -iname '*.zip' \) 2>/dev/null || true
-          echo "--- test -f directly, right here, right now ---"
-          test -f "${{ steps.flude.outputs.sarif-path }}" && echo "PRESENT at debug time" || echo "ABSENT at debug time"
-
       - name: Verify SARIF output and step summary are complete
         run: |
+          echo "=== inline diagnostics (same step, same process, before set -e) ==="
+          echo "pwd: $(pwd)"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          echo "reported sarif-path: '${{ steps.flude.outputs.sarif-path }}'" | cat -A | head -1
+          ls -la
+          stat "${{ steps.flude.outputs.sarif-path }}" 2>&1 || echo "stat failed with exit $?"
+          echo "=== end inline diagnostics ==="
+
           set -euo pipefail
           test -n "${{ steps.flude.outputs.sarif-path }}"
           test -f "${{ steps.flude.outputs.sarif-path }}"
