@@ -98,7 +98,9 @@ jobs:
           echo "--- ls -la \$GITHUB_WORKSPACE ---"
           ls -la "$GITHUB_WORKSPACE"
           echo "--- find / for any .sarif/.zip file (depth 8, errors suppressed) ---"
-          find / -maxdepth 8 \( -iname '*.sarif' -o -iname '*.zip' \) 2>/dev/null
+          find / -maxdepth 8 \( -iname '*.sarif' -o -iname '*.zip' \) 2>/dev/null || true
+          echo "--- test -f directly, right here, right now ---"
+          test -f "${{ steps.flude.outputs.sarif-path }}" && echo "PRESENT at debug time" || echo "ABSENT at debug time"
 
       - name: Verify SARIF output and step summary are complete
         run: |
