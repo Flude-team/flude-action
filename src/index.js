@@ -3,6 +3,7 @@ import { setOutput, logNotice, logError } from './github-output.js'
 import { submitJob, RateLimitError, ControlPlaneError } from './control-plane-client.js'
 import { pollUntilTerminal, describeTerminalStatus } from './poll.js'
 import { downloadResult, inferResultFilename } from './download.js'
+import { reportGitHubFindings } from './github-reporting.js'
 
 const VALID_FORMATS = new Set(['markdown', 'html'])
 
@@ -73,6 +74,11 @@ export async function run() {
   await downloadResult(finalStatus.result_url, destPath)
   setOutput('result-path', destPath)
   logNotice(`Result downloaded to ${destPath}`)
+
+  const { sarifPath } = await reportGitHubFindings(destPath)
+  if (sarifPath) {
+    setOutput('sarif-path', sarifPath)
+  }
 }
 
 // Allow src/index.js to be imported by tests without triggering a real run.

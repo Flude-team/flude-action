@@ -45,6 +45,12 @@ outputs:
     description: 'Signed, short-TTL GCS URL to the result archive. It expires quickly - download it immediately.'
   result-path:
     description: 'Local path to the downloaded result archive.'
+  sarif-path:
+    description: >
+      Local path to a SARIF report extracted from the result archive (report.sarif at the
+      archive root - a best-effort assumption, see README.md), if one was found. Feed this into
+      github/codeql-action/upload-sarif as a separate workflow step to publish it to Code
+      Scanning. Empty if no SARIF report was found in the archive.
 runs:
   using: 'node20'
   main: 'src/index.js'

@@ -31,6 +31,13 @@ dependencies** — the control-plane clones your public repository itself.
     format: markdown
 
 - run: unzip "${{ steps.flude.outputs.result-path }}" -d docs-output
+
+# Optional: publish findings to Code Scanning, if the result archive
+# contained a report.sarif (see "GitHub-specific reporting" below).
+- if: steps.flude.outputs.sarif-path != ''
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: ${{ steps.flude.outputs.sarif-path }}
 ```
 
 Repository and commit are taken from CI context (`GITHUB_REPOSITORY`,
@@ -65,6 +72,7 @@ create once, by hand.
 | `status` | Terminal status (`succeeded`, `failed`, `rejected_too_large`, `rejected_organization`, `rejected_private`, ...). |
 | `result-url` | Signed, short-TTL GCS URL. **Download it immediately** — see "Downloading the result" below. |
 | `result-path` | Local path to the downloaded archive. |
+| `sarif-path` | Local path to a SARIF report extracted from the archive, if one was found. Empty otherwise — see "GitHub-specific reporting" below. |
 
 ### Downloading the result
 
@@ -73,6 +81,42 @@ TTL and is meant to be consumed once) and exposes the local path as
 `result-path`. The archive's internal format isn't part of this action's
 contract yet — pipe it into `unzip`/`tar` (or `actions/upload-artifact`)
 depending on what the real control-plane ends up serving.
+
+### GitHub-specific reporting (DEL-B25)
+
+After downloading the result archive, the action makes one further
+best-effort assumption: that the archive contains a **`report.sarif`** file
+at its root, in the real SARIF 2.1.0 shape produced by
+`engine/ude/reporting.py::to_sarif()` (`ude audit --report-format sarif` /
+`ude diff --report-format sarif`). **This is not confirmed** — `DEL-B23`
+hasn't shipped, so no real control-plane has ever decided how (or whether) a
+SARIF report ends up in the archive. If `report.sarif` isn't found, or the
+archive can't be read as a ZIP at all, the action logs a `::warning::` and
+continues — a wrong assumption about the archive layout never fails an
+otherwise-successful documentation job.
+
+When `report.sarif` **is** found:
+
+1. **Inline annotations** — every finding at `level: error` gets a
+   `::error file=<path>,line=<n>::<message>` workflow command (file/line are
+   omitted when the finding doesn't carry a location — both are independently
+   optional in the underlying SARIF). `warning`/`note` findings don't get an
+   annotation, by design — they're still fully visible in the two channels
+   below, so nothing is silently dropped.
+2. **Code Scanning upload** — this action is a plain `node20` action, not a
+   composite one (that's DEL-B22's existing, already-implemented design,
+   deliberately not restructured for this), so it cannot invoke another
+   `uses:` step from inside its own runtime. It writes the extracted SARIF to
+   the `sarif-path` output instead; add
+   `github/codeql-action/upload-sarif@v3` as a **separate step** in your
+   workflow (see the usage example above) to actually publish it to Code
+   Scanning.
+3. **`$GITHUB_STEP_SUMMARY`** — a markdown table listing **every** finding,
+   of any level. An earlier design capped this list at 10 entries to match
+   GitHub's own (unrelated) annotation-display limit; that cap was removed on
+   purpose, specifically so the step summary is the one channel guaranteed to
+   show the complete list regardless of how many findings there are or how
+   GitHub's UI happens to render inline annotations.
 
 ### Timeouts
 
@@ -100,12 +144,19 @@ contract, and is explicit about what is and isn't verified.
   `src/control-plane-client.js`, `src/poll.js`, and `src/download.js` against
   the in-process mock, covering success, auth failure, rate limiting, each
   free-gate rejection status, an engine failure status, and the client-side
-  timeout safety net.
-- **End-to-end workflow** (`.github/workflows/e2e-mock.yml`): runs this
-  action for real via `uses: ./` in a GitHub Actions job, against the mock
-  server started as a background process, and asserts on its outputs
-  (`job-id`, `status`, `result-url`, `result-path`). This is DEL-B22's own
-  acceptance test, run continuously in CI rather than once by hand.
+  timeout safety net; and `src/zip-extract.js`, `src/sarif-report.js`, and
+  `src/github-reporting.js` (DEL-B25) against hand-built ZIP/SARIF fixtures
+  (`test-support/zip-builder.js`, `test-support/sarif-fixture.js`), covering
+  all three SARIF location edge cases, the missing/malformed-archive
+  fallbacks, and that the step summary lists more than 10 findings without
+  truncation.
+- **End-to-end workflows** (`.github/workflows/e2e-mock.yml`): the `e2e` job
+  runs this action for real via `uses: ./` against the mock server and
+  asserts on `job-id`/`status`/`result-url`/`result-path` (DEL-B22's own
+  acceptance test); the `e2e-sarif` job does the same against a mock result
+  archive containing a 15-finding `report.sarif` and asserts the step summary
+  and `sarif-path` output are both complete (DEL-B25's acceptance test),
+  run continuously in CI rather than once by hand.
 
 ### What this repo does and does not verify
 
@@ -114,8 +165,11 @@ contract, and is explicit about what is and isn't verified.
   implements this repo's best-effort guess at the API contract.
 - **Not verified**: the real control-plane, real Clerk token verification,
   real free-gate evaluation against a real repository, real GCS signed URLs,
-  or the real 10-minute server-side timeout. That requires `DEL-B23` to exist
-  first — see its card in `Delivery_ToDo.md` for the real end-to-end check.
+  the real 10-minute server-side timeout, or whether the real result archive
+  actually contains a `report.sarif` at its root (that assumption is this
+  repo's own, per DEL-B25 — see "GitHub-specific reporting" above). All of
+  that requires `DEL-B23` to exist first — see its card in `Delivery_ToDo.md`
+  for the real end-to-end check.
 
 Helper files that start a long-running mock server
 (`test-support/start-mock-server.mjs`) deliberately live outside `test/`:

@@ -4,9 +4,28 @@
 // under a directory named test/tests as a test file, and this one calls
 // server.listen() and never resolves, which would hang `node --test`.
 import { createMockControlPlane } from './mock-server.js'
+import { buildZip } from './zip-builder.js'
+import { buildSarifDocument } from './sarif-fixture.js'
 
 const port = Number(process.env.MOCK_PORT || 8787)
-const server = createMockControlPlane({ token: process.env.MOCK_TOKEN || 'test-token' })
+const scenario = process.env.MOCK_SCENARIO || 'default'
+
+let resultBody
+if (scenario === 'with-sarif') {
+  // 15 findings, deliberately more than the old (removed) 10-item display
+  // cap, mixing levels and the three location edge cases (file+line, file
+  // only, neither) - see DEL-B25.
+  const findings = Array.from({ length: 15 }, (_, i) => ({
+    ruleId: `RULE-${i}`,
+    level: i % 3 === 0 ? 'error' : i % 3 === 1 ? 'warning' : 'note',
+    message: `finding number ${i}`,
+    file: i % 4 === 0 ? null : `src/file${i}.py`,
+    line: i % 4 === 0 || i % 4 === 1 ? null : i + 1,
+  }))
+  resultBody = buildZip([{ name: 'report.sarif', content: buildSarifDocument(findings), method: 'deflate' }])
+}
+
+const server = createMockControlPlane({ token: process.env.MOCK_TOKEN || 'test-token', ...(resultBody ? { resultBody } : {}) })
 server.listen(port, '127.0.0.1', () => {
-  console.log(`Mock control-plane listening on http://127.0.0.1:${port}`)
+  console.log(`Mock control-plane (scenario: ${scenario}) listening on http://127.0.0.1:${port}`)
 })

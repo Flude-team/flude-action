@@ -48,3 +48,51 @@ jobs:
           test -f "${{ steps.flude.outputs.result-path }}"
           echo "job-id: ${{ steps.flude.outputs.job-id }}"
           echo "result-path: ${{ steps.flude.outputs.result-path }}"
+
+  # Same as above, but the mock's result archive actually contains a
+  # report.sarif with 15 findings - proves DEL-B25's GitHub reporting
+  # (annotations / step summary / sarif-path output) end to end, not just
+  # via unit tests against the mock in isolation.
+  e2e-sarif:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Start mock control-plane (with-sarif scenario)
+        env:
+          MOCK_PORT: '8788'
+          MOCK_SCENARIO: 'with-sarif'
+        run: |
+          node test-support/start-mock-server.mjs &
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8788/fake-results/warmup >/dev/null 2>&1; then break; fi
+            sleep 0.5
+          done
+
+      - name: Run flude-action against the mock control-plane
+        id: flude
+        uses: ./
+        with:
+          api-token: 'test-token'
+          api-base-url: 'http://127.0.0.1:8788'
+          format: 'markdown'
+          poll-interval-seconds: '1'
+          max-wait-seconds: '60'
+
+      - name: Verify SARIF output and step summary are complete
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.flude.outputs.sarif-path }}"
+          test -f "${{ steps.flude.outputs.sarif-path }}"
+          python3 -c "import json,sys; json.load(open(sys.argv[1]))" "${{ steps.flude.outputs.sarif-path }}"
+
+          test -f "$GITHUB_STEP_SUMMARY"
+          grep -q '15 finding(s)' "$GITHUB_STEP_SUMMARY"
+          # RULE-14 is past the old (removed) 10-item cap - proves the
+          # summary isn't silently truncated back to it.
+          grep -q 'RULE-14' "$GITHUB_STEP_SUMMARY"
+          grep -q 'finding number 14' "$GITHUB_STEP_SUMMARY"

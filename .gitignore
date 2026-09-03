@@ -2,3 +2,7 @@ node_modules/
 *.log
 flude-result.zip
 test-download-tmp.zip
+flude-report.sarif
+smoke-*.mjs
+smoke-output.txt
+smoke-summary.md
