@@ -1,0 +1,67 @@
+# Flude documentation-quality GitLab CI template (DEL-B26).
+#
+# Add to your project's .gitlab-ci.yml:
+#
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/Flude-team/flude-action/main/gitlab/flude.gitlab-ci.yml'
+#
+# `remote:` (not `project:`) is used because this template lives in a
+# GitHub-hosted repository, not a GitLab one - `include: project:` only
+# resolves GitLab-hosted projects. See gitlab/README.md for why the code
+# lives here instead of a GitLab-native repo. Pin FLUDE_ACTION_REF (below) to
+# a commit SHA once this repo cuts its first tag - `main` is provisional,
+# same caveat as any `uses: pkg@main` reference.
+#
+# Required CI/CD variables (Settings > CI/CD > Variables - mask both):
+#   FLUDE_API_TOKEN     Clerk API Key from app.flude.guide, sent as a Bearer
+#                       token. Create it once by hand; there is no OAuth flow
+#                       inside the CI run itself.
+#   FLUDE_API_BASE_URL  Base URL of the Flude SaaS control-plane. There is no
+#                       public control-plane yet (DEL-B23) - point this at
+#                       your own control-plane or local mock while
+#                       developing against this template.
+#
+# Runs entirely inside a single job's `script:` - submit, poll, download, and
+# write the Code Quality report all happen in one job, deliberately NOT split
+# across separate stages/jobs. GitLab only persists files between *jobs*
+# through `artifacts:`, explicitly declared; a later job never inherits an
+# earlier job's filesystem otherwise. Keeping every step in one job's script
+# sidesteps that class of bug entirely - the same class DEL-B25 hit on the
+# GitHub side (there, $GITHUB_STEP_SUMMARY turned out to be allocated fresh
+# per *step*, not shared across a job's steps, discovered only on a real
+# runner). GitLab's persistence boundary is a job, not a step, so the two
+# bugs aren't the same bug - but "verify what actually persists across the
+# boundary you're relying on, don't assume" is the same lesson, and a single
+# job's own script has no such boundary to get wrong in the first place.
+
+flude:
+  stage: test
+  image: node:20
+  rules:
+    - if: '$FLUDE_DISABLE == "true"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  variables:
+    FLUDE_FORMAT: 'markdown'
+    FLUDE_STRICT: 'false'
+    FLUDE_POLL_INTERVAL_SECONDS: '10'
+    FLUDE_MAX_WAIT_SECONDS: '900'
+    FLUDE_CODEQUALITY_PATH: 'gl-code-quality-report.json'
+    FLUDE_ACTION_REF: 'main'
+  before_script:
+    - |
+      if [ -z "$FLUDE_API_TOKEN" ]; then
+        echo "FLUDE_API_TOKEN is not set - create one at app.flude.guide and add it as a masked CI/CD variable." >&2
+        exit 1
+      fi
+      if [ -z "$FLUDE_API_BASE_URL" ]; then
+        echo "FLUDE_API_BASE_URL is not set - see gitlab/README.md." >&2
+        exit 1
+      fi
+    - git clone --depth 1 --branch "$FLUDE_ACTION_REF" https://github.com/Flude-team/flude-action.git .flude-action
+  script:
+    - node .flude-action/gitlab/src/run.js
+  artifacts:
+    reports:
+      codequality: $FLUDE_CODEQUALITY_PATH

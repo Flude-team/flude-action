@@ -5,6 +5,10 @@ the Flude engine, never touches your source on the runner beyond reading
 `GITHUB_REPOSITORY`/`GITHUB_SHA`, and has **zero third-party runtime
 dependencies** — the control-plane clones your public repository itself.
 
+> Using GitLab instead? See [`gitlab/README.md`](gitlab/README.md) for the
+> GitLab CI template (`DEL-B26`) — it reuses this repo's `src/*.js` client
+> directly, not a separate implementation.
+
 > **Status: Stage 1 / pre-release.** The control-plane API this action talks
 > to (`DEL-B23`) does not exist yet. Everything below the "Development &
 > testing" section describes the assumed contract this action was built

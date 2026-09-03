@@ -6,6 +6,7 @@
 import { createMockControlPlane } from './mock-server.js'
 import { buildZip } from './zip-builder.js'
 import { buildSarifDocument } from './sarif-fixture.js'
+import { buildCodequalityDocument } from './codequality-fixture.js'
 
 const port = Number(process.env.MOCK_PORT || 8787)
 const scenario = process.env.MOCK_SCENARIO || 'default'
@@ -23,6 +24,20 @@ if (scenario === 'with-sarif') {
     line: i % 4 === 0 || i % 4 === 1 ? null : i + 1,
   }))
   resultBody = buildZip([{ name: 'report.sarif', content: buildSarifDocument(findings), method: 'deflate' }])
+} else if (scenario === 'with-codequality') {
+  // 5 findings, all with a file+line (to_codeclimate() drops anything
+  // without both - see DEL-B26 / gitlab/src/gitlab-reporting.js).
+  const findings = Array.from({ length: 5 }, (_, i) => ({
+    ruleId: `RULE-${i}`,
+    entityName: `Widget::method${i}`,
+    level: i % 3 === 0 ? 'error' : i % 3 === 1 ? 'warning' : 'note',
+    message: `finding number ${i}`,
+    file: `src/file${i}.py`,
+    line: i + 1,
+  }))
+  resultBody = buildZip([
+    { name: 'codequality.json', content: buildCodequalityDocument(findings), method: 'deflate' },
+  ])
 }
 
 const server = createMockControlPlane({ token: process.env.MOCK_TOKEN || 'test-token', ...(resultBody ? { resultBody } : {}) })
