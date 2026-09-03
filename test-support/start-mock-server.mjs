@@ -25,9 +25,14 @@ if (scenario === 'with-sarif') {
   }))
   resultBody = buildZip([{ name: 'report.sarif', content: buildSarifDocument(findings), method: 'deflate' }])
 } else if (scenario === 'with-codequality') {
-  // 5 findings, all with a file+line (to_codeclimate() drops anything
-  // without both - see DEL-B26 / gitlab/src/gitlab-reporting.js).
-  const findings = Array.from({ length: 5 }, (_, i) => ({
+  // All findings carry a file+line (to_codeclimate() drops anything without
+  // both - see DEL-B26 / gitlab/src/gitlab-reporting.js). Count is
+  // configurable (default 5) so a GitLab MR-widget test can give the head
+  // branch a different finding count than the base branch's own baseline
+  // pipeline - the widget diffs base vs head reports, so identical counts
+  // with identical fingerprints always render as "hasn't changed".
+  const count = Number(process.env.MOCK_FINDINGS_COUNT || 5)
+  const findings = Array.from({ length: count }, (_, i) => ({
     ruleId: `RULE-${i}`,
     entityName: `Widget::method${i}`,
     level: i % 3 === 0 ? 'error' : i % 3 === 1 ? 'warning' : 'note',
