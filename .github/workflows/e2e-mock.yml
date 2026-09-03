@@ -14,6 +14,9 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -49,12 +52,24 @@ jobs:
           echo "job-id: ${{ steps.flude.outputs.job-id }}"
           echo "result-path: ${{ steps.flude.outputs.result-path }}"
 
+      - name: Send Alerts
+        if: always()
+        uses: ./.github/actions/notify
+        with:
+          status: ${{ job.status }}
+          telegram_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
   # Same as above, but the mock's result archive actually contains a
   # report.sarif with 15 findings - proves DEL-B25's GitHub reporting
   # (annotations / step summary / sarif-path output) end to end, not just
   # via unit tests against the mock in isolation.
   e2e-sarif:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -105,3 +120,12 @@ jobs:
           # summary isn't silently truncated back to it.
           grep -q 'RULE-14' "${{ steps.flude.outputs.summary-path }}"
           grep -q 'finding number 14' "${{ steps.flude.outputs.summary-path }}"
+
+      - name: Send Alerts
+        if: always()
+        uses: ./.github/actions/notify
+        with:
+          status: ${{ job.status }}
+          telegram_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}

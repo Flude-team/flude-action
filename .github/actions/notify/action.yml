@@ -1,0 +1,48 @@
+name: 'Flude Action Notifier'
+description: 'Unified Telegram and GitHub Issue alerting for flude-action, mirroring Pipeline/engine''s .github/actions/notify (a private repo this public one cannot `uses:` directly, so this is its own trimmed copy, not a reference).'
+inputs:
+  status:
+    description: 'Job status (success, failure, cancelled, skipped)'
+    required: true
+  telegram_token:
+    description: 'Telegram Bot Token'
+    required: true
+  telegram_to:
+    description: 'Telegram Chat ID'
+    required: true
+  github_token:
+    description: 'GitHub PAT/Token for Issue Creation'
+    required: true
+  create_issue:
+    description: 'Open a GitHub issue on failure. Set "false" for matrix jobs to avoid duplicate issues.'
+    required: false
+    default: 'true'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Send Telegram Alert
+      if: contains(github.event.head_commit.message || github.event.commits[0].message || github.event.pull_request.title || '', '[mute]') == false
+      uses: appleboy/telegram-action@v1.0.1
+      with:
+        to: ${{ inputs.telegram_to }}
+        token: ${{ inputs.telegram_token }}
+        message: |
+          Repository: ${{ github.repository }}
+          Workflow: ${{ github.workflow }}
+          Status: ${{ inputs.status == 'success' && '🟢 SUCCESS' || inputs.status == 'cancelled' && '🟡 CANCELLED' || inputs.status == 'skipped' && '⚪ SKIPPED' || inputs.status == 'failure' && '🔴 FAILURE' || format('⚠️ UNKNOWN STATUS ({0})', inputs.status) }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+
+    - name: Create GitHub Issue on Failure
+      if: inputs.status == 'failure' && inputs.create_issue == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🔴 Failure in workflow: ${context.workflow}`,
+            body: `The workflow run failed. Check details here: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+          })
