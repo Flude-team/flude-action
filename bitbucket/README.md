@@ -113,6 +113,22 @@ This is unrelated to `FLUDE_API_TOKEN`, which is still a real, required
 credential (the same Clerk API Key mechanism as the other two platforms) -
 it authenticates to the **Flude control-plane**, not to Bitbucket's own API.
 
+**A real bug this documentation-reading alone didn't catch, only a real
+Pipelines run did (2026-09-04):** `localhost:29418` is a genuine HTTP
+**forward proxy**, not a drop-in hostname for `api.bitbucket.org`. The first
+live attempt sent `fetch('http://localhost:29418/2.0/repositories/...')`
+directly - i.e. treated port 29418 as if a server there answered API paths
+itself - and got back a raw `nginx/1.26.3` `500 Internal Server Error` from
+the proxy, not a JSON error from Bitbucket's API. The correct shape (matches
+an Atlassian Community accepted answer for this exact symptom): connect to
+the proxy, then send the **absolute target URI** as the request path -
+`http://api.bitbucket.org/2.0/...` (`http://`, not `https://` - the proxy
+can't tunnel HTTPS via CONNECT here) - as the literal path of the request
+line. `fetch`'s `dispatcher`/proxy support needs `undici`'s `ProxyAgent`,
+which isn't a Node 20 core module, so `bitbucket-insights-client.js` uses
+plain `node:http` for this one call shape instead of adding a dependency.
+Fixed and reverified for real - see "Real live Bitbucket Pipelines run" below.
+
 ## Usage (once published - see "Publishing" below)
 
 ```yaml
@@ -199,21 +215,50 @@ Two separate things need a public place to live, and neither has one yet:
   download failed only due to the mock's own `127.0.0.1`-hardcoded
   `result_url`, a test-fixture limitation already worked around by the
   direct (non-Docker) run above using the identical code.
+- **Real live Bitbucket Pipelines run** (2026-09-04, owner's own `flude`
+  workspace, public test repository `flude/flude-bitbucket-del-b39-test`,
+  since Pipelines itself requires the account-level "Bitbucket account"
+  two-step verification - a genuinely separate setting from Atlassian ID's
+  own 2FA, confirmed the hard way after several rounds of "still blocked"):
+  a real PR (`!1`) running `node .flude-action/bitbucket/src/run.js` directly
+  (not the Docker Pipe - no registry to pull it from yet, see "Publishing"),
+  against the mock started in the same job step (same technique as the
+  GitLab side's `e2e-mock`-equivalent local rehearsal), with
+  `BITBUCKET_API_BASE_URL` left at its real default so the Code Insights
+  calls went through the genuine `localhost:29418` proxy, not a mock.
+  First real attempt failed on the forward-proxy bug described above; fixed,
+  pushed, rerun (pipeline `#10`) - **succeeded**: job log shows the real
+  submit/poll/download cycle, then a `PUT`/`POST` through the real proxy
+  that this time returned success, and the PR's own build-status panel shows
+  `1 of 1 build passed` with a `1 Report` link. Opening it shows Bitbucket's
+  own real Code Insights report UI: **"Flude documentation quality" - 15
+  finding(s), 5 at level "error"**, each row with severity
+  (High/Medium/Info), rule id, message, and a `path:line` link
+  (`src/file6.py:7` etc.) - exactly the 15/5 shape the `with-sarif` mock
+  fixture produces. Annotations don't render inline in the PR's diff view
+  because none of the mock's `src/fileN.py` paths are part of this PR's
+  actual diff (it only touches `bitbucket-pipelines.yml`) - the same
+  location-must-be-in-the-diff behavior GitHub/GitLab both have; the report
+  itself, which is the part this card's acceptance criterion is actually
+  about, is real and genuinely populated.
 
 ### What this repo does and does not verify
 
 - **Verified**: `bitbucket-reporting.js`'s and `bitbucket-insights-client.js`'s
   own logic (unit tests against a mock), the full submit/poll/download/report
-  cycle via a real local invocation, and the Docker image's packaging via a
-  real build and partial real run - all described above.
-- **Not verified**: running the actual Pipe on a real Bitbucket Pipelines
-  build (needs a Bitbucket account and test repository - not available in
-  this environment as of 2026-09-04, asked for explicitly rather than
-  assumed), and therefore also not verified: that the `localhost:29418`
-  proxy auth actually works as documented, that annotations actually render
-  correctly on a real PR's diff, or the real control-plane / real Clerk
-  token verification / real free-gate evaluation / real GCS signed URLs
-  (same gap as `../README.md` and `../gitlab/README.md`, gated on `DEL-B23`).
-  Also not verified: whether the real result archive actually contains a
-  `report.sarif` at its root (the same DEL-B25 assumption this client
-  depends on, restated here since it now has a second consumer).
+  cycle via a real local invocation, the Docker image's packaging via a real
+  build, and - as of the real live Pipelines run above - the actual
+  `localhost:29418` proxy auth, a real Code Insights report with real
+  findings on a real PR, and the account-level 2FA gate Pipelines itself
+  requires.
+- **Not verified**: running the Pipe as an actual **Docker image** (`pipe:
+  docker://...`) inside real Pipelines - the live run above used the plain
+  `node` script directly, not the packaged image, since there's no registry
+  to pull it from yet (see "Publishing"); real Clerk token verification,
+  real free-gate evaluation, real GCS signed URLs, or the real control-plane
+  in general (same gap as `../README.md` and `../gitlab/README.md`, gated on
+  `DEL-B23` - the live run above used the same in-job mock control-plane the
+  other two platforms' real runs used). Also not verified: whether the real
+  result archive actually contains a `report.sarif` at its root (the same
+  DEL-B25 assumption this client depends on, restated here since it now has
+  a second consumer).
