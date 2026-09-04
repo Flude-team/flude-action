@@ -8,6 +8,12 @@ dependencies** — the control-plane clones your public repository itself.
 > Using GitLab instead? See [`gitlab/README.md`](gitlab/README.md) for the
 > GitLab CI template (`DEL-B26`) — it reuses this repo's `src/*.js` client
 > directly, not a separate implementation.
+>
+> Using Bitbucket instead? See [`bitbucket/README.md`](bitbucket/README.md)
+> for the Bitbucket Pipe (`DEL-B39`) — same control-plane client, packaged as
+> a Docker image (structurally different from the other two, see that
+> README for why) and reporting via Bitbucket's Code Insights API instead of
+> SARIF/Code Quality JSON.
 
 > **Status: Stage 1 / pre-release.** The control-plane API this action talks
 > to (`DEL-B23`) does not exist yet. Everything below the "Development &

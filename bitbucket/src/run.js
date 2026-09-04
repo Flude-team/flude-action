@@ -1,23 +1,32 @@
 import { submitJob, RateLimitError, ControlPlaneError } from '../../src/control-plane-client.js'
 import { pollUntilTerminal, describeTerminalStatus } from '../../src/poll.js'
 import { downloadResult, inferResultFilename } from '../../src/download.js'
-import { reportGitLabFindings } from './gitlab-reporting.js'
+import { reportBitbucketFindings } from './bitbucket-reporting.js'
 import { getEnv, getBooleanEnv } from '../../src/env-input.js'
 
 const VALID_FORMATS = new Set(['markdown', 'html'])
 
 function readRepositoryContext() {
-  const projectUrl = process.env.CI_PROJECT_URL
-  const sha = process.env.CI_COMMIT_SHA
-  if (!projectUrl || !sha) {
-    throw new Error('CI_PROJECT_URL/CI_COMMIT_SHA are not set - this must run inside a GitLab CI job.')
+  // BITBUCKET_REPO_FULL_NAME ("workspace/repo_slug") and BITBUCKET_COMMIT
+  // are Bitbucket Pipelines' own default variables (confirmed against
+  // Atlassian's docs) - splitting the former avoids depending on a separate
+  // BITBUCKET_WORKSPACE variable that isn't documented as reliably present.
+  const fullName = process.env.BITBUCKET_REPO_FULL_NAME
+  const commitSha = process.env.BITBUCKET_COMMIT
+  if (!fullName || !commitSha) {
+    throw new Error(
+      'BITBUCKET_REPO_FULL_NAME/BITBUCKET_COMMIT are not set - this must run inside a Bitbucket Pipelines step.'
+    )
   }
-  // CI_PROJECT_URL never carries embedded credentials (unlike
-  // CI_REPOSITORY_URL, which the runner uses to clone the job's own repo
-  // and which is not meant to be handed to a third-party API) - appending
-  // ".git" gives a plain, public clone URL, the same construction
-  // ../../src/index.js uses for GITHUB_REPOSITORY.
-  return { repositoryUrl: `${projectUrl}.git`, commitSha: sha }
+  const [workspace, repoSlug] = fullName.split('/')
+  if (!workspace || !repoSlug) {
+    throw new Error(`Unexpected BITBUCKET_REPO_FULL_NAME shape: "${fullName}" (expected "workspace/repo_slug").`)
+  }
+  // Same construction pattern as the GitHub/GitLab clients' own
+  // repositoryUrl (https://<host>/<owner>/<repo>.git) - the control-plane
+  // clones the repository itself, there is no separate "path to sources"
+  // input.
+  return { repositoryUrl: `https://bitbucket.org/${fullName}.git`, commitSha, workspace, repoSlug }
 }
 
 export async function run() {
@@ -27,13 +36,16 @@ export async function run() {
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
   const maxWaitSeconds = Number(getEnv('FLUDE_MAX_WAIT_SECONDS', { defaultValue: '900' }))
-  const codequalityPath = getEnv('FLUDE_CODEQUALITY_PATH', { defaultValue: 'gl-code-quality-report.json' })
+  // Real Bitbucket Pipelines routes Bitbucket API calls through a fixed
+  // local proxy (see bitbucket-insights-client.js) - overridable only so
+  // this repo's own tests can point it at a mock instead.
+  const bitbucketApiBaseUrl = getEnv('BITBUCKET_API_BASE_URL', { defaultValue: 'http://localhost:29418' })
 
   if (!VALID_FORMATS.has(format)) {
     throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'markdown' or 'html').`)
   }
 
-  const { repositoryUrl, commitSha } = readRepositoryContext()
+  const { repositoryUrl, commitSha, workspace, repoSlug } = readRepositoryContext()
 
   console.log(
     `Submitting ${repositoryUrl}@${commitSha} to the Flude control-plane (format=${format}, strict=${strict}).`
@@ -42,7 +54,7 @@ export async function run() {
   const jobId = await submitJob(apiBaseUrl, apiToken, {
     repositoryUrl,
     commitSha,
-    platform: 'gitlab',
+    platform: 'bitbucket',
     format,
     strict,
   })
@@ -71,13 +83,16 @@ export async function run() {
   await downloadResult(finalStatus.result_url, destPath)
   console.log(`Result downloaded to ${destPath}`)
 
-  await reportGitLabFindings(destPath, { codequalityOutputPath: codequalityPath })
+  await reportBitbucketFindings(destPath, { baseUrl: bitbucketApiBaseUrl, workspace, repoSlug, commit: commitSha })
 }
 
-// Mirrors ../../src/index.js's GITHUB_ACTIONS guard - lets this module be
-// imported by tests without triggering a real run. GitLab Runner sets
-// GITLAB_CI=true for every job.
-if (process.env.GITLAB_CI === 'true') {
+// Mirrors ../../src/index.js's GITHUB_ACTIONS guard and gitlab/src/run.js's
+// GITLAB_CI guard - lets this module be imported by tests without
+// triggering a real run. Bitbucket Pipelines sets BITBUCKET_BUILD_NUMBER for
+// every step; there is no simple boolean equivalent to GITHUB_ACTIONS/
+// GITLAB_CI documented, but a build number is always present and non-empty
+// in a real step.
+if (process.env.BITBUCKET_BUILD_NUMBER) {
   run().catch((error) => {
     if (error instanceof RateLimitError) {
       console.error(error.message)

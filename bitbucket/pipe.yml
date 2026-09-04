@@ -1,0 +1,38 @@
+# Bitbucket Pipe manifest (DEL-B39). NOT YET PUBLISHED - see bitbucket/README.md's
+# "Publishing" section for why (needs a public image registry account, which
+# this session doesn't have) and for the current status of that gap.
+#
+# `image` below is a placeholder GHCR reference (ghcr.io, under the existing
+# Flude-team GitHub org - no new Docker Hub account needed just to publish an
+# image, unlike the "official Bitbucket Pipes Registry" listing itself, whose
+# own `repository:` field wants a Bitbucket-hosted source - see README.md).
+# Update it once an image is actually built and pushed somewhere.
+
+name: Flude Docs
+image: ghcr.io/flude-team/bitbucket-pipe:0.1.0
+category: Code quality
+description: >-
+  Generate documentation with Flude via the Flude SaaS control-plane and report
+  findings as Bitbucket Code Insights (report + annotations).
+variables:
+  - name: FLUDE_API_TOKEN
+    default: '${FLUDE_API_TOKEN}'
+  - name: FLUDE_API_BASE_URL
+    default: '${FLUDE_API_BASE_URL}'
+  - name: FLUDE_FORMAT
+    default: 'markdown'
+  - name: FLUDE_STRICT
+    default: 'false'
+  - name: FLUDE_POLL_INTERVAL_SECONDS
+    default: '10'
+  - name: FLUDE_MAX_WAIT_SECONDS
+    default: '900'
+repository: https://github.com/Flude-team/flude-action
+maintainer:
+  name: Flude
+  website: https://flude.guide
+  email: contact@flude.guide
+tags:
+  - documentation
+  - code-quality
+  - linting
