@@ -166,21 +166,98 @@ API contract.
   free-gate explanation; a missing `FLUDE_API_TOKEN` correctly threw and
   exited 1 before ever contacting the mock.
 
+### Real GitLab-runner verification (2026-09-03)
+
+Done on a throwaway public test project on gitlab.com
+(`derryk/flude-gitlab-del-b26-test`, owner's own account), against the
+`with-codequality` mock started in the job's own `before_script` (same
+technique as `../.github/workflows/e2e-mock.yml` on the GitHub side) - not
+against a real control-plane, which still doesn't exist (`DEL-B23`).
+
+- **Job succeeds end-to-end on a real shared runner** - MR
+  [`!1`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/merge_requests/1),
+  pipeline
+  [`#2817229456`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/pipelines/2817229456),
+  job [`16287818788`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/jobs/16287818788):
+  clone → mock start → submit → poll (`running...`) → download → `5
+  finding(s) written to gl-code-quality-report.json` → `Job succeeded`.
+  (The *first* attempt on this same MR genuinely failed first -
+  `Cannot find module '.../gitlab/src/run.js'` - because the `gitlab/`
+  directory had been committed locally but never pushed to
+  `github.com/Flude-team/flude-action`, which is what the job's own `git
+  clone` actually fetches from. Pushed, retried, passed. Real bug a
+  local-only check could never have caught, exactly the class of thing this
+  section exists to catch.)
+- **`artifacts:reports:codequality` actually uploads** - same job log:
+  `gl-code-quality-report.json: found 1 matching artifact files and
+  directories` /
+  `Uploading artifacts as "codequality" to coordinator... 201 Created`.
+- **`include: remote:` against the raw GitHub URL resolves cleanly** -
+  verified via the test project's own Pipeline Editor
+  (`-/ci/editor`, Validate tab: "Pipeline syntax is correct"; Full
+  configuration tab: the merged config shows the `flude:` job - `stage:
+  test`, `image: node:20`, the `$FLUDE_DISABLE`/`merge_request_event`/
+  `$CI_COMMIT_BRANCH` rules, `FLUDE_FORMAT: markdown` - fully resolved from
+  `https://raw.githubusercontent.com/Flude-team/flude-action/main/gitlab/flude.gitlab-ci.yml`).
+  This was checked in isolation (pasted into the editor, never committed)
+  rather than as the actual template used by the two test MRs below, which
+  instead inline a `before_script` override to start the mock - see "The
+  `flude:` job's `before_script:` needs a local-dev override" below for why.
+- **Findings render in a real MR's diff/overview widget** - the harder,
+  genuinely non-obvious part. MR `!1` merged first (`main` now has its own
+  `.gitlab-ci.yml` and a baseline pipeline,
+  [`#2817375023`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/pipelines/2817375023),
+  with the same 5 mock findings). A **second** MR,
+  [`!2`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/merge_requests/2)
+  (`MOCK_FINDINGS_COUNT: '6'` instead of the default 5 - see the mock change
+  below), was needed to actually see anything: GitLab's Code Quality MR
+  widget **diffs the head pipeline's report against the target branch's own
+  baseline report** - it does not just list everything present in the head
+  report. Against an identical 5-finding baseline it correctly said "Code
+  Quality hasn't changed" (not a bug - accurate, since nothing had). Once the
+  head branch's report had a 6th finding, the widget correctly said **"Code
+  Quality scans found 1 new finding"**, expandable to **"Info - finding
+  number 5, in `src/file5.py:6`"** - exactly the new entry, correctly
+  attributed, nothing else. A consumer with no prior baseline pipeline on
+  their target branch (the common case - first time adding this template)
+  will see "hasn't changed" on their very first MR even with real findings
+  present; the widget only starts showing degradations once the target
+  branch has run this job at least once itself.
+
+To make the second MR possible without touching the archive-layout contract,
+`test-support/start-mock-server.mjs`'s `with-codequality` scenario gained a
+`MOCK_FINDINGS_COUNT` env var (default 5, unchanged) instead of a hardcoded
+count - test-only, no `src/*.js` or `gitlab/src/*.js` change.
+
+#### The `flude:` job's `before_script:` needs a local-dev override
+
+Neither test MR used the bare `include: remote:` from "Usage" above verbatim
+- there is still no real control-plane to point `FLUDE_API_BASE_URL` at, so
+both test projects' own `.gitlab-ci.yml` instead defined the `flude:` job
+directly (copy of `flude.gitlab-ci.yml`'s job, `MOCK_SCENARIO`/
+`MOCK_FINDINGS_COUNT`/`MOCK_TOKEN` added to `variables:`, and a
+`before_script` step added to start
+`node .flude-action/test-support/start-mock-server.mjs &` and poll it ready
+before the real `script:` step runs `gitlab/src/run.js`). This is the
+pattern a real consumer would follow to develop against this template
+locally before `DEL-B23` ships a real control-plane to point at - not a
+limitation of `include:` itself (see the Pipeline Editor check above, which
+did exercise the bare `include: remote:` in isolation).
+
 ### What this repo does and does not verify
 
-- **Verified**: `run.js`'s and `gitlab-reporting.js`'s own logic - variable
-  parsing, the full submit/poll/download/extract cycle, error handling - via
-  both unit tests and a real local invocation against the mock control-plane,
-  as described above.
-- **Not verified**: running the actual `flude.gitlab-ci.yml` template on a
-  real GitLab runner (this development environment has no GitLab project or
-  account to test against), and therefore also not verified: that findings
-  actually render in a real merge request's diff widget, that `include:
-  remote:` resolves and merges correctly against a real consumer pipeline,
-  that `stage: test` doesn't collide with a consumer's customized `stages:`
-  list in practice, or the real control-plane / real Clerk token verification
-  / real free-gate evaluation / real GCS signed URLs (same gap as
-  `../README.md`, gated on `DEL-B23`). **This is the acceptance criterion
-  this card explicitly asks for and it remains open** - re-run this on a real
-  GitLab project (even against the mock, which needs no real control-plane)
-  before treating DEL-B26 as done, not just this repo's own local checks.
+- **Verified**: `run.js`'s and `gitlab-reporting.js`'s own logic (unit tests
+  and a real local invocation against the mock, both described above), *and*
+  now the template's actual mechanics on a real GitLab shared runner (clone,
+  mock start, submit/poll/download, artifact upload, `include: remote:`
+  resolution, and MR-widget rendering of new findings) - all described above
+  under "Real GitLab-runner verification".
+- **Not verified**: the real control-plane, real Clerk token verification,
+  real free-gate evaluation, real GCS signed URLs, or whether the real result
+  archive actually contains a `codequality.json` at its root (same gap as
+  `report.sarif` on the GitHub side - see "The `codequality.json` archive-layout
+  assumption" above). All of that requires `DEL-B23` to exist first. Also not
+  verified: a consumer's own `stages:` list colliding with this template's
+  `stage: test` (untested since both test projects had no custom `stages:`
+  of their own) - documented as a caveat in `flude.gitlab-ci.yml`'s header
+  comment, not exercised here.
