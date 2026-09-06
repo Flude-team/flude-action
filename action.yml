@@ -16,9 +16,9 @@ inputs:
       against this action.
     required: true
   format:
-    description: "Output format: 'markdown' or 'html'."
+    description: "Output format: 'hugo_markdown' or 'html'."
     required: false
-    default: 'markdown'
+    default: 'hugo_markdown'
   strict:
     description: 'Enable Strict Compilation Mode.'
     required: false

@@ -10,7 +10,7 @@ const basePayload = {
   repositoryUrl: 'https://github.com/acme/widget.git',
   commitSha: 'abc123',
   platform: 'github',
-  format: 'markdown',
+  format: 'hugo_markdown',
   strict: false,
 }
 

@@ -5,7 +5,7 @@ import { pollUntilTerminal, describeTerminalStatus } from './poll.js'
 import { downloadResult, inferResultFilename } from './download.js'
 import { reportGitHubFindings } from './github-reporting.js'
 
-const VALID_FORMATS = new Set(['markdown', 'html'])
+const VALID_FORMATS = new Set(['hugo_markdown', 'html'])
 
 function readRepositoryContext() {
   const repository = process.env.GITHUB_REPOSITORY
@@ -22,13 +22,13 @@ function readRepositoryContext() {
 export async function run() {
   const apiToken = getInput('api-token', { required: true })
   const apiBaseUrl = getInput('api-base-url', { required: true })
-  const format = getInput('format') || 'markdown'
+  const format = getInput('format') || 'hugo_markdown'
   const strict = getBooleanInput('strict')
   const pollIntervalSeconds = Number(getInput('poll-interval-seconds') || '10')
   const maxWaitSeconds = Number(getInput('max-wait-seconds') || '900')
 
   if (!VALID_FORMATS.has(format)) {
-    throw new Error(`Invalid 'format' input: "${format}" (expected 'markdown' or 'html').`)
+    throw new Error(`Invalid 'format' input: "${format}" (expected 'hugo_markdown' or 'html').`)
   }
 
   const { repositoryUrl, commitSha } = readRepositoryContext()

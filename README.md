@@ -38,7 +38,7 @@ dependencies** — the control-plane clones your public repository itself.
   with:
     api-token: ${{ secrets.FLUDE_API_TOKEN }}
     api-base-url: ${{ vars.FLUDE_CONTROL_PLANE_URL }} # no public control-plane exists yet, see Status above
-    format: markdown
+    format: hugo_markdown
 
 - run: unzip "${{ steps.flude.outputs.result-path }}" -d docs-output
 
@@ -69,7 +69,7 @@ create once, by hand.
 | --- | --- | --- | --- |
 | `api-token` | yes | — | Clerk API Key, sent as `Authorization: Bearer <token>`. |
 | `api-base-url` | yes | — | Base URL of the control-plane API. |
-| `format` | no | `markdown` | `markdown` or `html`. |
+| `format` | no | `hugo_markdown` | `hugo_markdown` or `html`. |
 | `strict` | no | `false` | Enable Strict Compilation Mode. |
 | `poll-interval-seconds` | no | `10` | Delay between `GET /jobs/{id}` polls. |
 | `max-wait-seconds` | no | `900` | Client-side safety net only — see below. |
