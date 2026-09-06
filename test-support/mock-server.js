@@ -16,7 +16,7 @@ const SCENARIOS = {
   'reject-too-large': () => ({ status: 'rejected_too_large' }),
   'reject-organization': () => ({ status: 'rejected_organization' }),
   'reject-private': () => ({ status: 'rejected_private' }),
-  fail: () => ({ status: 'failed', reason: 'simulated engine failure' }),
+  fail: () => ({ status: 'failed', error: 'simulated engine failure' }),
 }
 
 function scenarioFromRepositoryUrl(repositoryUrl) {

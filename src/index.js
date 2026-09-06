@@ -1,5 +1,5 @@
 import { getInput, getBooleanInput } from './github-input.js'
-import { setOutput, logNotice, logError } from './github-output.js'
+import { setOutput, logNotice, logError, logWarning } from './github-output.js'
 import { submitJob, RateLimitError, ControlPlaneError } from './control-plane-client.js'
 import { pollUntilTerminal, describeTerminalStatus } from './poll.js'
 import { downloadResult, inferResultFilename } from './download.js'
@@ -59,12 +59,17 @@ export async function run() {
 
   if (finalStatus.status !== 'succeeded') {
     throw new Error(
-      `Job ${jobId} ended with status '${finalStatus.status}'${finalStatus.reason ? `: ${finalStatus.reason}` : ''}.`
+      `Job ${jobId} ended with status '${finalStatus.status}'${finalStatus.error ? `: ${finalStatus.error}` : ''}.`
     )
   }
 
   if (!finalStatus.result_url) {
     throw new Error(`Job ${jobId} succeeded but the control-plane did not return a result_url.`)
+  }
+
+  if (finalStatus.warnings && finalStatus.warnings.length > 0) {
+    const warningsText = Array.isArray(finalStatus.warnings) ? finalStatus.warnings.join('\n') : finalStatus.warnings;
+    logWarning(`Doxygen warnings:\n${warningsText}`)
   }
 
   setOutput('result-url', finalStatus.result_url)
