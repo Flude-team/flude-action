@@ -38,7 +38,7 @@ jobs:
         with:
           api-token: 'test-token'
           api-base-url: 'http://127.0.0.1:8787'
-          format: 'markdown'
+          format: 'hugo_markdown'
           poll-interval-seconds: '1'
           max-wait-seconds: '60'
 
@@ -91,7 +91,7 @@ jobs:
         with:
           api-token: 'test-token'
           api-base-url: 'http://127.0.0.1:8788'
-          format: 'markdown'
+          format: 'hugo_markdown'
           poll-interval-seconds: '1'
           max-wait-seconds: '60'
 
