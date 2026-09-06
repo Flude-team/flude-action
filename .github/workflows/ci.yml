@@ -7,6 +7,7 @@ on:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -21,7 +22,13 @@ jobs:
       - run: npm test
 
       - name: Send Alerts
-        if: always()
+        # appleboy/telegram-action is a container action -- GitHub only supports those on
+        # Linux runners ("Container action is only supported on Linux"). Without the
+        # runner.os guard this step hard-fails on windows-latest/macos-latest on every run,
+        # which (combined with the default fail-fast: true, now disabled above) used to
+        # cancel the still-running ubuntu-latest/windows-latest test jobs before npm test
+        # could finish there.
+        if: always() && runner.os == 'Linux'
         uses: ./.github/actions/notify
         with:
           status: ${{ job.status }}
