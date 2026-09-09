@@ -4,7 +4,7 @@ import { downloadResult, inferResultFilename } from '../../src/download.js'
 import { reportBitbucketFindings } from './bitbucket-reporting.js'
 import { getEnv, getBooleanEnv } from '../../src/env-input.js'
 
-const VALID_FORMATS = new Set(['markdown', 'html'])
+const VALID_FORMATS = new Set(['hugo_markdown', 'html'])
 
 function readRepositoryContext() {
   // BITBUCKET_REPO_FULL_NAME ("workspace/repo_slug") and BITBUCKET_COMMIT
@@ -34,6 +34,7 @@ export async function run() {
   const apiBaseUrl = getEnv('FLUDE_API_BASE_URL', { required: true })
   const format = getEnv('FLUDE_FORMAT', { defaultValue: 'markdown' })
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
+  const language = getEnv('FLUDE_LANGUAGE') || 'python'
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
   const maxWaitSeconds = Number(getEnv('FLUDE_MAX_WAIT_SECONDS', { defaultValue: '900' }))
   // Real Bitbucket Pipelines routes Bitbucket API calls through a fixed
@@ -42,7 +43,7 @@ export async function run() {
   const bitbucketApiBaseUrl = getEnv('BITBUCKET_API_BASE_URL', { defaultValue: 'http://localhost:29418' })
 
   if (!VALID_FORMATS.has(format)) {
-    throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'markdown' or 'html').`)
+    throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'hugo_markdown' or 'html').`)
   }
 
   const { repositoryUrl, commitSha, workspace, repoSlug } = readRepositoryContext()
@@ -57,7 +58,8 @@ export async function run() {
     platform: 'bitbucket',
     format,
     strict,
-  })
+      language,
+    })
   console.log(`Job submitted: ${jobId}`)
 
   const finalStatus = await pollUntilTerminal(apiBaseUrl, apiToken, jobId, {
@@ -104,3 +106,4 @@ if (process.env.BITBUCKET_BUILD_NUMBER) {
     process.exitCode = 1
   })
 }
+
