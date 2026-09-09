@@ -43,7 +43,7 @@ flude:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   variables:
-    FLUDE_FORMAT: 'markdown'
+    FLUDE_FORMAT: 'hugo_markdown'
     FLUDE_STRICT: 'false'
     FLUDE_LANGUAGE: 'python'
     FLUDE_POLL_INTERVAL_SECONDS: '10'
@@ -66,4 +66,5 @@ flude:
   artifacts:
     reports:
       codequality: $FLUDE_CODEQUALITY_PATH
+
 
