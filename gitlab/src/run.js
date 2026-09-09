@@ -25,6 +25,7 @@ export async function run() {
   const apiBaseUrl = getEnv('FLUDE_API_BASE_URL', { required: true })
   const format = getEnv('FLUDE_FORMAT', { defaultValue: 'markdown' })
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
+  const language = getEnv('FLUDE_LANGUAGE') || 'python'
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
   const maxWaitSeconds = Number(getEnv('FLUDE_MAX_WAIT_SECONDS', { defaultValue: '900' }))
   const codequalityPath = getEnv('FLUDE_CODEQUALITY_PATH', { defaultValue: 'gl-code-quality-report.json' })
@@ -89,5 +90,6 @@ if (process.env.GITLAB_CI === 'true') {
     process.exitCode = 1
   })
 }
+
 
 
