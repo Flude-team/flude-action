@@ -78,6 +78,7 @@ export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, plat
       platform,
       format,
       strict,
+      config: { language },
     },
   })
   if (!body || !body.job_id) {
@@ -93,4 +94,5 @@ export async function getJobStatus(baseUrl, token, jobId) {
   }
   return body
 }
+
 
