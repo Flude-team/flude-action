@@ -68,7 +68,7 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   return parsed
 }
 
-export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict }) {
+export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language }) {
   const body = await request(baseUrl, '/v1/jobs', {
     method: 'POST',
     token,
@@ -93,3 +93,4 @@ export async function getJobStatus(baseUrl, token, jobId) {
   }
   return body
 }
+

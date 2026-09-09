@@ -45,6 +45,7 @@ flude:
   variables:
     FLUDE_FORMAT: 'markdown'
     FLUDE_STRICT: 'false'
+    FLUDE_LANGUAGE: 'python'
     FLUDE_POLL_INTERVAL_SECONDS: '10'
     FLUDE_MAX_WAIT_SECONDS: '900'
     FLUDE_CODEQUALITY_PATH: 'gl-code-quality-report.json'
@@ -65,3 +66,4 @@ flude:
   artifacts:
     reports:
       codequality: $FLUDE_CODEQUALITY_PATH
+

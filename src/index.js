@@ -24,6 +24,7 @@ export async function run() {
   const apiBaseUrl = getInput('api-base-url', { required: true })
   const format = getInput('format') || 'hugo_markdown'
   const strict = getBooleanInput('strict')
+  const language = getInput('language') || 'python'
   const pollIntervalSeconds = Number(getInput('poll-interval-seconds') || '10')
   const maxWaitSeconds = Number(getInput('max-wait-seconds') || '900')
 
@@ -39,6 +40,7 @@ export async function run() {
     repositoryUrl,
     commitSha,
     platform: 'github',
+    language,
     format,
     strict,
   })
@@ -102,3 +104,4 @@ if (process.env.GITHUB_ACTIONS === 'true') {
     process.exitCode = 1
   })
 }
+

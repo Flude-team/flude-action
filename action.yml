@@ -9,6 +9,10 @@ inputs:
       Flude API key (a Clerk API Key created once at app.flude.guide and stored as a
       repository or organization secret). Sent to the control-plane as a Bearer token.
     required: true
+  language:
+    description: 'Project language (e.g. python, go)'
+    required: false
+    default: 'python'
   api-base-url:
     description: >
       Base URL of the Flude SaaS control-plane API. There is no public control-plane yet
@@ -61,3 +65,4 @@ outputs:
 runs:
   using: 'node20'
   main: 'src/index.js'
+
