@@ -4,7 +4,7 @@ import { downloadResult, inferResultFilename } from '../../src/download.js'
 import { reportGitLabFindings } from './gitlab-reporting.js'
 import { getEnv, getBooleanEnv } from '../../src/env-input.js'
 
-const VALID_FORMATS = new Set(['markdown', 'html'])
+const VALID_FORMATS = new Set(['hugo_markdown', 'html'])
 
 function readRepositoryContext() {
   const projectUrl = process.env.CI_PROJECT_URL
@@ -30,7 +30,7 @@ export async function run() {
   const codequalityPath = getEnv('FLUDE_CODEQUALITY_PATH', { defaultValue: 'gl-code-quality-report.json' })
 
   if (!VALID_FORMATS.has(format)) {
-    throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'markdown' or 'html').`)
+    throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'hugo_markdown' or 'html').`)
   }
 
   const { repositoryUrl, commitSha } = readRepositoryContext()
@@ -89,4 +89,5 @@ if (process.env.GITLAB_CI === 'true') {
     process.exitCode = 1
   })
 }
+
 
