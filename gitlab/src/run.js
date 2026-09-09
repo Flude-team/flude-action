@@ -46,7 +46,8 @@ export async function run() {
     platform: 'gitlab',
     format,
     strict,
-  })
+      language,
+    })
   console.log(`Job submitted: ${jobId}`)
 
   const finalStatus = await pollUntilTerminal(apiBaseUrl, apiToken, jobId, {
@@ -90,6 +91,7 @@ if (process.env.GITLAB_CI === 'true') {
     process.exitCode = 1
   })
 }
+
 
 
 
