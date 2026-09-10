@@ -32,7 +32,7 @@ function readRepositoryContext() {
 export async function run() {
   const apiToken = getEnv('FLUDE_API_TOKEN', { required: true })
   const apiBaseUrl = getEnv('FLUDE_API_BASE_URL', { required: true })
-  const format = getEnv('FLUDE_FORMAT', { defaultValue: 'markdown' })
+  const format = getEnv('FLUDE_FORMAT', { defaultValue: 'hugo_markdown' })
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
   const language = getEnv('FLUDE_LANGUAGE') || 'python'
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
