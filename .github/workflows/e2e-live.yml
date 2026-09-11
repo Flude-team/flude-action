@@ -1,0 +1,61 @@
+name: E2E against live control-plane
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+jobs:
+  e2e-live:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout flude-action
+        uses: actions/checkout@v4
+
+      - name: Checkout fixture
+        uses: actions/checkout@v4
+        with:
+          repository: 'Flude-team/flude-e2e-fixture'
+          path: 'fixture-repo'
+
+      - name: Get fixture SHA
+        id: sha
+        run: |
+          cd fixture-repo
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Run flude-action against the live control-plane
+        id: flude
+        uses: ./
+        env:
+          GITHUB_REPOSITORY: 'Flude-team/flude-e2e-fixture'
+          GITHUB_SHA: ${{ steps.sha.outputs.sha }}
+        with:
+          api-token: ${{ secrets.FLUDE_E2E_LIVE_API_TOKEN }}
+          api-base-url: 'https://control-plane.flude.guide'
+          language: 'cpp'
+          poll-interval-seconds: '10'
+          max-wait-seconds: '600'
+
+      - name: Verify outputs
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.flude.outputs.job-id }}"
+          test "${{ steps.flude.outputs.status }}" = "succeeded"
+          test -n "${{ steps.flude.outputs.result-url }}"
+          test -f "${{ steps.flude.outputs.result-path }}"
+          
+          # The fixture contains an undocumented class
+          grep -q "class" "${{ steps.flude.outputs.result-path }}"
+
+      - name: Send Alerts
+        if: failure()
+        uses: ./.github/actions/notify
+        with:
+          status: ${{ job.status }}
+          telegram_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
