@@ -9,12 +9,6 @@ inputs:
       Flude API key (a Clerk API Key created once at app.flude.guide and stored as a
       repository or organization secret). Sent to the control-plane as a Bearer token.
     required: true
-  repository:
-    description: 'Target repository (e.g. owner/repo). Defaults to the current repository.'
-    required: false
-  commit-sha:
-    description: 'Target commit SHA. Defaults to the current commit.'
-    required: false
   language:
     description: 'Project language (e.g. python, go)'
     required: false
