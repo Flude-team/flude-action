@@ -8,8 +8,8 @@ import { reportGitHubFindings } from './github-reporting.js'
 const VALID_FORMATS = new Set(['hugo_markdown', 'html'])
 
 function readRepositoryContext() {
-  const repository = process.env.GITHUB_REPOSITORY
-  const sha = process.env.GITHUB_SHA
+  const repository = getInput('repository') || process.env.GITHUB_REPOSITORY
+  const sha = getInput('commit-sha') || process.env.GITHUB_SHA
   if (!repository || !sha) {
     throw new Error('GITHUB_REPOSITORY/GITHUB_SHA are not set - this action must run inside a GitHub Actions job.')
   }

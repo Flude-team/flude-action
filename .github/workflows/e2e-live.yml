@@ -21,19 +21,19 @@ jobs:
           repository: 'Flude-team/flude-e2e-fixture'
           path: 'fixture-repo'
 
-      - name: Get fixture SHA and override GITHUB_REPOSITORY
+      - name: Get fixture SHA
         id: sha
         run: |
           cd fixture-repo
           SHA=$(git rev-parse HEAD)
           echo "sha=$SHA" >> $GITHUB_OUTPUT
-          echo "GITHUB_REPOSITORY=Flude-team/flude-e2e-fixture" >> $GITHUB_ENV
-          echo "GITHUB_SHA=$SHA" >> $GITHUB_ENV
 
       - name: Run flude-action against the live control-plane
         id: flude
         uses: ./
         with:
+          repository: 'Flude-team/flude-e2e-fixture'
+          commit-sha: ${{ steps.sha.outputs.sha }}
           api-token: ${{ secrets.FLUDE_E2E_LIVE_API_TOKEN }}
           api-base-url: 'https://control-plane.flude.guide'
           language: 'cpp'
