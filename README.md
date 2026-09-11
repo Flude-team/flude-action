@@ -186,16 +186,9 @@ contract, and is explicit about what is and isn't verified.
 
 ### What this repo does and does not verify
 
-- **Verified**: the action's own logic — input parsing, HTTP calls, polling,
-  status handling, error messages, downloading — against a mock that
-  implements this repo's best-effort guess at the API contract.
-- **Not verified**: the real control-plane, real Clerk token verification,
-  real free-gate evaluation against a real repository, real GCS signed URLs,
-  the real 10-minute server-side timeout, or whether the real result archive
-  actually contains a `report.sarif` at its root (that assumption is this
-  repo's own, per DEL-B25 — see "GitHub-specific reporting" above). All of
-  that requires `DEL-B23` to exist first — see its card in `Delivery_ToDo.md`
-  for the real end-to-end check.
+- **Verified by `e2e-mock.yml`**: the action's own logic — input parsing, HTTP calls, polling, status handling, error messages, downloading — against a mock that simulates the API contract.
+- **Verified by `e2e-live.yml`**: the happy path against the real control-plane, real Clerk token verification, real GCS signed URLs, and real result archive generation for GitHub repositories.
+- **Not verified (pending remaining DEL-B49 tasks)**: GitLab/Bitbucket repositories, free-gate evaluation, rate-limit enforcement (beyond the E2E override), kill-switch, and API-key issuance/revocation.
 
 Helper files that start a long-running mock server
 (`test-support/start-mock-server.mjs`) deliberately live outside `test/`:

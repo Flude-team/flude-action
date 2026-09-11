@@ -15,9 +15,7 @@ inputs:
     default: 'python'
   api-base-url:
     description: >
-      Base URL of the Flude SaaS control-plane API. There is no public control-plane yet
-      (see DEL-B23) - point this at your own control-plane or local mock while developing
-      against this action.
+      Base URL of the Flude SaaS control-plane API.
     required: true
   format:
     description: "Output format: 'hugo_markdown' or 'html'."
