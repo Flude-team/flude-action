@@ -63,6 +63,9 @@ Clerk API Key through the account page. Store it as a secret
 inside the CI run itself — the token is a long-lived Bearer credential you
 create once, by hand.
 
+See `app.flude.guide/privacy` for the Privacy Policy covering this OAuth login
+and the data collected while your job runs (`DEL-A12`).
+
 ### Inputs
 
 | Name | Required | Default | Description |
