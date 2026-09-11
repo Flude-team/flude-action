@@ -187,7 +187,7 @@ contract, and is explicit about what is and isn't verified.
 ### What this repo does and does not verify
 
 - **Verified by `e2e-mock.yml`**: the action's own logic — input parsing, HTTP calls, polling, status handling, error messages, downloading — against a mock that simulates the API contract.
-- **Verified by `e2e-live.yml`**: the happy path against the real control-plane, real Clerk token verification, real GCS signed URLs, and real result archive generation for GitHub repositories.
+- **Verified by `e2e-live.yml` (in [flude-e2e-fixture](https://github.com/Flude-team/flude-e2e-fixture))**: the happy path against the real control-plane, real Clerk token verification, real GCS signed URLs, and real result archive generation for GitHub repositories. This is located in the fixture repository to test the action as an external consumer via branch reference, without local repository overriding.
 - **Not verified (pending remaining DEL-B49 tasks)**: GitLab/Bitbucket repositories, free-gate evaluation, rate-limit enforcement (beyond the E2E override), kill-switch, and API-key issuance/revocation.
 
 Helper files that start a long-running mock server
