@@ -16,4 +16,4 @@ WORKDIR /pipe
 COPY package.json ./package.json
 COPY src ./src
 COPY bitbucket/src ./bitbucket/src
-ENTRYPOINT ["node", "bitbucket/src/run.js"]
+ENTRYPOINT ["node", "/pipe/bitbucket/src/run.js"]

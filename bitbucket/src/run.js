@@ -40,7 +40,7 @@ export async function run() {
   // Real Bitbucket Pipelines routes Bitbucket API calls through a fixed
   // local proxy (see bitbucket-insights-client.js) - overridable only so
   // this repo's own tests can point it at a mock instead.
-  const bitbucketApiBaseUrl = getEnv('BITBUCKET_API_BASE_URL', { defaultValue: 'http://localhost:29418' })
+  const bitbucketApiBaseUrl = getEnv('BITBUCKET_API_BASE_URL', { defaultValue: 'http://host.docker.internal:29418' })
 
   if (!VALID_FORMATS.has(format)) {
     throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'hugo_markdown' or 'html').`)

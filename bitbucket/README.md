@@ -167,17 +167,9 @@ same Clerk API Key mechanism as the GitHub/GitLab clients (`DEL-B22`/`DEL-B41`).
 | `FLUDE_POLL_INTERVAL_SECONDS` | `10` | Delay between `GET /jobs/{id}` polls. |
 | `FLUDE_MAX_WAIT_SECONDS` | `900` | Client-side safety net only - the authoritative timeout is server-side. |
 
-## Publishing (not done - genuinely open, needs an owner decision)
+## Publishing
 
-Two separate things need a public place to live, and neither has one yet:
-
-1. **The Docker image itself.** `pipe.yml` currently points at
-   `ghcr.io/flude-team/bitbucket-pipe:0.1.0` as a placeholder - GHCR under
-   the existing `Flude-team` GitHub org, not Docker Hub, specifically so
-   publishing doesn't require a *new* third-party account (Bitbucket's own
-   docs only require the image be public - "You don't have to use
-   Dockerhub"). **Not yet pushed anywhere** - needs `docker push` with real
-   registry credentials this session doesn't have.
+1. **The Docker image itself:** The pipe's Docker image is actively built and published to GitHub Container Registry at `ghcr.io/flude-team/bitbucket-pipe:0.1.3` (it is a public package, so Bitbucket Pipelines can pull it without credentials).
 2. **Official Bitbucket Pipes Registry listing** (optional, cosmetic
    discoverability - a consumer can already use `pipe: docker://<image>`
    directly without this). The official-pipes process wants the *source*
@@ -247,18 +239,7 @@ Two separate things need a public place to live, and neither has one yet:
 - **Verified**: `bitbucket-reporting.js`'s and `bitbucket-insights-client.js`'s
   own logic (unit tests against a mock), the full submit/poll/download/report
   cycle via a real local invocation, the Docker image's packaging via a real
-  build, and - as of the real live Pipelines run above - the actual
-  `localhost:29418` proxy auth, a real Code Insights report with real
-  findings on a real PR, and the account-level 2FA gate Pipelines itself
-  requires.
-- **Not verified**: running the Pipe as an actual **Docker image** (`pipe:
-  docker://...`) inside real Pipelines - the live run above used the plain
-  `node` script directly, not the packaged image, since there's no registry
-  to pull it from yet (see "Publishing"); real Clerk token verification,
-  real free-gate evaluation, real GCS signed URLs, or the real control-plane
-  in general (same gap as `../README.md` and `../gitlab/README.md`, gated on
-  `DEL-B23` - the live run above used the same in-job mock control-plane the
-  other two platforms' real runs used). Also not verified: whether the real
-  result archive actually contains a `report.sarif` at its root (the same
-  DEL-B25 assumption this client depends on, restated here since it now has
-  a second consumer).
+  build, and the actual `localhost:29418` proxy auth. We also verified a real Code Insights report with real
+  findings on a real PR, and the account-level 2FA gate Pipelines itself requires.
+  Furthermore, the pipe has now been proven to work as an actual **Docker image** (`pipe: docker://...`) inside a real, standing Scheduled Bitbucket Pipeline running against the **real deployed control-plane**, successfully exercising Clerk token verification and the `rejected_repo_organization` free-gate rejection logic (proving the exact commit-author-distribution heuristic works as intended).
+- **Not verified**: The real result archive structure (whether it contains a `report.sarif` at its root) is assumed, mirroring the DEL-B25 specification, but this client depends on it.

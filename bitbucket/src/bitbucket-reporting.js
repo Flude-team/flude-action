@@ -57,7 +57,7 @@ function toAnnotation(finding) {
     annotation_type: ANNOTATION_TYPE,
     summary: finding.ruleId ? `[${finding.ruleId}] ${finding.message}` : finding.message,
     severity: SEVERITY_MAPPING[finding.level] || 'LOW',
-    path: finding.file,
+    path: finding.file.replace(/^\/+/, ''),
     line: finding.line,
   }
 }

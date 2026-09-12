@@ -30,7 +30,7 @@ import { request as httpRequest } from 'node:http'
 // server instead (not a proxy), so requests go straight to it with a normal
 // `fetch`. Which transport to use is decided by whether BITBUCKET_API_BASE_URL
 // is still the real Pipelines proxy default or has been overridden.
-const REAL_PROXY_BASE_URL = 'http://localhost:29418'
+const REAL_PROXY_BASE_URL = 'http://host.docker.internal:29418'
 // The proxy can only forward plain HTTP, not HTTPS (see above) - this is
 // intentionally http://, not the https:// URL a direct (non-proxied) client
 // would use.
@@ -50,7 +50,7 @@ function requestViaRealProxy(path, { method, body }) {
   return new Promise((resolve, reject) => {
     const req = httpRequest(
       {
-        host: '127.0.0.1',
+        host: 'host.docker.internal',
         port: 29418,
         method,
         // The absolute target URI as the request path is what makes this a
