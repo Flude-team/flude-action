@@ -8,8 +8,8 @@ engine and never touches your source beyond reading `CI_PROJECT_URL`/
 `CI_COMMIT_SHA` - the control-plane clones your public repository itself.
 
 > **Status: Stage 1 / pre-release, same caveat as `../README.md`.** The
-> control-plane API this talks to (`DEL-B23`) does not exist yet. Everything
-> below describes the assumed contract this was built against.
+> control-plane API this talks to (`DEL-B23`) is now deployed and publicly
+> accessible. Everything below describes the assumed contract this was built against.
 
 ## Why this code lives in the `flude-action` repo
 
@@ -19,9 +19,9 @@ concept, which is a real mismatch for a GitLab template. It stays here anyway
 shared client (`../src/control-plane-client.js`, `../src/poll.js`, etc.) has
 no packaging story of its own yet, so a separate repo would need a git
 submodule, a published npm package, or a copy - all real new maintenance
-surface for five files, before `DEL-B23`'s contract has even stabilized once.
+surface for five files.
 A plain relative import costs nothing and can never drift. Revisit the split
-once the contract is real and there's a second forcing reason (unlike
+once there's a second forcing reason (unlike
 Bitbucket's `DEL-B39`, which structurally needs its own repo - a Pipe is a
 Docker image + `pipe.yml`, not a CI-YAML template).
 
@@ -45,7 +45,7 @@ required CI/CD variables in **Settings > CI/CD > Variables** (mask both):
 | Variable | Required | Description |
 | --- | --- | --- |
 | `FLUDE_API_TOKEN` | yes | Clerk API Key from `app.flude.guide`, sent as `Authorization: Bearer <token>`. Same token mechanism as the GitHub Action (`DEL-B22`/`DEL-B41`) - a long-lived credential you create once by hand, no OAuth flow inside the CI run itself. |
-| `FLUDE_API_BASE_URL` | yes | Base URL of the control-plane API. No public control-plane exists yet - point this at your own control-plane or local mock while developing (see "Development & testing" below). |
+| `FLUDE_API_BASE_URL` | yes | Base URL of the control-plane API. Example: `https://flude-worker-controlplane-555636434059.us-central1.run.app`. Point this at a local mock while developing locally (see "Development & testing" below). |
 
 Optional variables, all with defaults (override under the included job's
 `variables:` in your own `.gitlab-ci.yml`, or set project-level CI/CD
@@ -172,7 +172,7 @@ Done on a throwaway public test project on gitlab.com
 (`derryk/flude-gitlab-del-b26-test`, owner's own account), against the
 `with-codequality` mock started in the job's own `before_script` (same
 technique as `../.github/workflows/e2e-mock.yml` on the GitHub side) - not
-against a real control-plane, which still doesn't exist (`DEL-B23`).
+against the real control-plane.
 
 - **Job succeeds end-to-end on a real shared runner** - MR
   [`!1`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/merge_requests/1),
@@ -232,7 +232,7 @@ count - test-only, no `src/*.js` or `gitlab/src/*.js` change.
 #### The `flude:` job's `before_script:` needs a local-dev override
 
 Neither test MR used the bare `include: remote:` from "Usage" above verbatim
-- there is still no real control-plane to point `FLUDE_API_BASE_URL` at, so
+- to test against a mock instead of the real control-plane,
 both test projects' own `.gitlab-ci.yml` instead defined the `flude:` job
 directly (copy of `flude.gitlab-ci.yml`'s job, `MOCK_SCENARIO`/
 `MOCK_FINDINGS_COUNT`/`MOCK_TOKEN` added to `variables:`, and a
@@ -240,24 +240,20 @@ directly (copy of `flude.gitlab-ci.yml`'s job, `MOCK_SCENARIO`/
 `node .flude-action/test-support/start-mock-server.mjs &` and poll it ready
 before the real `script:` step runs `gitlab/src/run.js`). This is the
 pattern a real consumer would follow to develop against this template
-locally before `DEL-B23` ships a real control-plane to point at - not a
+locally against a mock - not a
 limitation of `include:` itself (see the Pipeline Editor check above, which
 did exercise the bare `include: remote:` in isolation).
 
 ### What this repo does and does not verify
 
-- **Verified**: `run.js`'s and `gitlab-reporting.js`'s own logic (unit tests
-  and a real local invocation against the mock, both described above), *and*
-  now the template's actual mechanics on a real GitLab shared runner (clone,
-  mock start, submit/poll/download, artifact upload, `include: remote:`
-  resolution, and MR-widget rendering of new findings) - all described above
-  under "Real GitLab-runner verification".
-- **Not verified**: the real control-plane, real Clerk token verification,
-  real free-gate evaluation, real GCS signed URLs, or whether the real result
-  archive actually contains a `codequality.json` at its root (same gap as
-  `report.sarif` on the GitHub side - see "The `codequality.json` archive-layout
-  assumption" above). All of that requires `DEL-B23` to exist first. Also not
-  verified: a consumer's own `stages:` list colliding with this template's
-  `stage: test` (untested since both test projects had no custom `stages:`
-  of their own) - documented as a caveat in `flude.gitlab-ci.yml`'s header
-  comment, not exercised here.
+- **Verified**:
+  - `run.js`'s and `gitlab-reporting.js`'s own logic (unit tests and a real local invocation against the mock).
+  - The template's actual mechanics on a real GitLab shared runner (clone, mock start, submit/poll/download, artifact upload, `include: remote:` resolution, and MR-widget rendering of new findings).
+  - The `flude.gitlab-ci.yml` template supports `$CI_PIPELINE_SOURCE == "schedule"`.
+  - The real test project `derryk/flude-gitlab-del-b26-test` has a C++ fixture (`UndocumentedWidget`) and a `verify-flude` job that successfully parses and validates the real contents of `gl-code-quality-report.json`.
+- **Not yet verified (pending real run)**:
+  - A full live run against the real control-plane with a real Clerk token and real free-gate evaluation. The infrastructure is ready, but the CI/CD variables and Pipeline Schedule in the test project are configured manually by the owner and the final run has not yet completed.
+
+#### Pipeline Schedule Cadence
+
+Unlike GitHub Actions (which offers unlimited public runner minutes), GitLab.com provides a flat 400 compute-minutes per month across the entire namespace. A real hourly run (~24 × 30 runs × ~1.75 minutes) would exhaust the free quota in about 9-10 days. Therefore, the scheduled E2E run against the live control-plane uses a **daily** cadence, safely consuming only ~50 minutes per month.
