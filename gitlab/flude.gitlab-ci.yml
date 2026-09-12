@@ -64,5 +64,14 @@ flude:
   artifacts:
     reports:
       codequality: $FLUDE_CODEQUALITY_PATH
+    paths:
+      - $FLUDE_CODEQUALITY_PATH
+    # `reports:` artifacts alone are NOT included in the downloadable artifacts
+    # archive and are therefore invisible to downstream jobs via `needs:`/
+    # `dependencies:` - a documented GitLab limitation, not a bug in this repo
+    # (confirmed against a real failing `needs: ["flude"]` consumer job: ENOENT
+    # on gl-code-quality-report.json despite the `flude` job uploading it
+    # successfully). `paths:` makes the same file available for a job like
+    # derryk/flude-gitlab-del-b26-test's `verify-flude` to actually read it.
 
 
