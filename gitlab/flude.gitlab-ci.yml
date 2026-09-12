@@ -16,10 +16,7 @@
 #   FLUDE_API_TOKEN     Clerk API Key from app.flude.guide, sent as a Bearer
 #                       token. Create it once by hand; there is no OAuth flow
 #                       inside the CI run itself.
-#   FLUDE_API_BASE_URL  Base URL of the Flude SaaS control-plane. There is no
-#                       public control-plane yet (DEL-B23) - point this at
-#                       your own control-plane or local mock while
-#                       developing against this template.
+#   FLUDE_API_BASE_URL  Base URL of the Flude SaaS control-plane.
 #
 # Runs entirely inside a single job's `script:` - submit, poll, download, and
 # write the Code Quality report all happen in one job, deliberately NOT split
@@ -40,6 +37,7 @@ flude:
   rules:
     - if: '$FLUDE_DISABLE == "true"'
       when: never
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   variables:
