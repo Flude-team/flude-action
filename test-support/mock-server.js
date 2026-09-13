@@ -53,9 +53,42 @@ export function createMockControlPlane({ token = 'test-token', resultBody = 'fak
       const rawBody = Buffer.concat(chunks).toString('utf8')
       const payload = rawBody ? JSON.parse(rawBody) : {}
 
-      if ((payload.repository_url || '').includes('scenario-rate-limited')) {
+      const repoUrl = payload.repository_url || ''
+
+      if (repoUrl.includes('scenario-rate-limited')) {
         send(429, { error: 'rate limit exceeded' })
         return
+      }
+
+      if (repoUrl.includes('scenario-403-')) {
+        if (repoUrl.includes('scenario-403-organization')) {
+          send(403, { error: 'rejected_organization' })
+          return
+        }
+        if (repoUrl.includes('scenario-403-private')) {
+          send(403, { error: 'rejected_private' })
+          return
+        }
+        if (repoUrl.includes('scenario-403-repo_organization')) {
+          send(403, { error: 'rejected_repo_organization' })
+          return
+        }
+        if (repoUrl.includes('scenario-403-too_large')) {
+          send(403, { error: 'rejected_too_large', message: 'Size is 500MB' })
+          return
+        }
+        if (repoUrl.includes('scenario-403-unknown_reject')) {
+          send(403, { error: 'rejected_future_reason' })
+          return
+        }
+        if (repoUrl.includes('scenario-403-not-rejected')) {
+          send(403, { error: 'some_other_error' })
+          return
+        }
+        if (repoUrl.includes('scenario-403-no-error')) {
+          send(403, { status: 'failed' })
+          return
+        }
       }
 
       const jobId = randomUUID()

@@ -47,6 +47,20 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   }
 
   if (response.status === 401 || response.status === 403) {
+    if (response.status === 403 && parsed && typeof parsed.error === 'string' && parsed.error.startsWith('rejected_')) {
+      const REASONS = {
+        rejected_organization: 'job submitted from an organization account, not a personal one',
+        rejected_private: 'repository is not public',
+        rejected_repo_organization: 'repository itself is owned by an organization',
+        rejected_too_large: 'repository too large'
+      }
+      const plainReason = REASONS[parsed.error] || parsed.error
+      const extraMessage = parsed.message ? ` (${parsed.message})` : ''
+      throw new ControlPlaneError(
+        `The job was rejected by the free-tier gate: ${plainReason}${extraMessage}.`,
+        { status: response.status, body: parsed }
+      )
+    }
     throw new ControlPlaneError(
       'The control-plane rejected the API token. Create or renew it at app.flude.guide ' +
         'and update the repository/organization secret.',

@@ -48,3 +48,123 @@ test('getJobStatus reports running then a terminal status', async () => {
     assert.ok(second.result_url)
   })
 })
+test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejected_organization', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-organization.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /rejected by the free-tier gate/)
+      assert.match(err.message, /organization account/)
+      assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
+      assert.equal(err.status, 403)
+      assert.equal(err.body.error, 'rejected_organization')
+    }
+  })
+})
+
+test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejected_private', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-private.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /rejected by the free-tier gate/)
+      assert.match(err.message, /not public/)
+      assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
+    }
+  })
+})
+
+test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejected_repo_organization', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-repo_organization.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /rejected by the free-tier gate/)
+      assert.match(err.message, /owned by an organization/)
+      assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
+    }
+  })
+})
+
+test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejected_too_large including message', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-too_large.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /rejected by the free-tier gate/)
+      assert.match(err.message, /repository too large/)
+      assert.match(err.message, /Size is 500MB/)
+      assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
+    }
+  })
+})
+
+test('submitJob shows a generic free-tier gate message (not the token-renewal one) for an unrecognized rejected_* error', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-unknown_reject.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /rejected by the free-tier gate/)
+      assert.match(err.message, /rejected_future_reason/)
+      assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
+    }
+  })
+})
+
+test('submitJob falls back to token-renewal message on HTTP 403 without rejected_* error', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-not-rejected.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /renew it at app.flude.guide/)
+      assert.doesNotMatch(err.message, /free-tier gate/)
+    }
+  })
+})
+
+test('submitJob falls back to token-renewal message on HTTP 403 with no error field', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-no-error.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.match(err.message, /renew it at app.flude.guide/)
+      assert.doesNotMatch(err.message, /free-tier gate/)
+    }
+  })
+})
+
