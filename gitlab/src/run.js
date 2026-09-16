@@ -26,6 +26,7 @@ export async function run() {
   const format = getEnv('FLUDE_FORMAT', { defaultValue: 'hugo_markdown' })
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
   const language = getEnv('FLUDE_LANGUAGE') || 'python'
+  const compileCommandsPath = getEnv('FLUDE_COMPILE_COMMANDS_PATH')
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
   const maxWaitSeconds = Number(getEnv('FLUDE_MAX_WAIT_SECONDS', { defaultValue: '900' }))
   const codequalityPath = getEnv('FLUDE_CODEQUALITY_PATH', { defaultValue: 'gl-code-quality-report.json' })
@@ -46,8 +47,9 @@ export async function run() {
     platform: 'gitlab',
     format,
     strict,
-      language,
-    })
+    language,
+    compileCommandsPath,
+  })
   console.log(`Job submitted: ${jobId}`)
 
   const finalStatus = await pollUntilTerminal(apiBaseUrl, apiToken, jobId, {

@@ -13,6 +13,11 @@ inputs:
     description: 'Project language (e.g. python, go)'
     required: false
     default: 'python'
+  compile-commands-path:
+    description: >
+      Optional path to compile_commands.json, generated prior to this step (e.g., via cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON).
+      Must be a relative path within the repository.
+    required: false
   api-base-url:
     description: >
       Base URL of the Flude SaaS control-plane API.

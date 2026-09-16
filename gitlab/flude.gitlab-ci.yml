@@ -44,6 +44,7 @@ flude:
     FLUDE_FORMAT: 'hugo_markdown'
     FLUDE_STRICT: 'false'
     FLUDE_LANGUAGE: 'python'
+    FLUDE_COMPILE_COMMANDS_PATH: ''
     FLUDE_POLL_INTERVAL_SECONDS: '10'
     FLUDE_MAX_WAIT_SECONDS: '900'
     FLUDE_CODEQUALITY_PATH: 'gl-code-quality-report.json'

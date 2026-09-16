@@ -82,7 +82,7 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   return parsed
 }
 
-export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language }) {
+export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath }) {
   const body = await request(baseUrl, '/v1/jobs', {
     method: 'POST',
     token,
@@ -92,7 +92,7 @@ export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, plat
       platform,
       format,
       strict,
-      config: { language },
+      config: { language, compile_commands_path: compileCommandsPath },
     },
   })
   if (!body || !body.job_id) {

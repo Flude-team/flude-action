@@ -25,6 +25,7 @@ export async function run() {
   const format = getInput('format') || 'hugo_markdown'
   const strict = getBooleanInput('strict')
   const language = getInput('language') || 'python'
+  const compileCommandsPath = getInput('compile-commands-path')
   const pollIntervalSeconds = Number(getInput('poll-interval-seconds') || '10')
   const maxWaitSeconds = Number(getInput('max-wait-seconds') || '900')
 
@@ -41,6 +42,7 @@ export async function run() {
     commitSha,
     platform: 'github',
     language,
+    compileCommandsPath,
     format,
     strict,
   })
