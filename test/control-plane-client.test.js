@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
 import { withMockServer } from '../test-support/helpers.js'
 import { submitJob, getJobStatus, ControlPlaneError, RateLimitError } from '../src/control-plane-client.js'
 
@@ -17,6 +18,66 @@ test('submitJob returns a job id on success', async () => {
     assert.equal(typeof jobId, 'string')
     assert.ok(jobId.length > 0)
   })
+})
+
+test('submitJob maps vcxprojPath, vcxprojConfiguration, vcxprojPlatform to config payload', async () => {
+  let capturedBody = null
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      capturedBody = JSON.parse(raw)
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      vcxprojPath: 'project.vcxproj',
+      vcxprojConfiguration: 'Debug',
+      vcxprojPlatform: 'ARM64'
+    })
+    
+    assert.ok(capturedBody)
+    assert.equal(capturedBody.config.vcxproj_path, 'project.vcxproj')
+    assert.equal(capturedBody.config.vcxproj_configuration, 'Debug')
+    assert.equal(capturedBody.config.vcxproj_platform, 'ARM64')
+  } finally {
+    server.close()
+  }
+})
+
+test('submitJob maps bazelBuildPath, bazelTargetName to config payload', async () => {
+  let capturedBody = null
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      capturedBody = JSON.parse(raw)
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      bazelBuildPath: 'src/lib',
+      bazelTargetName: 'my_lib'
+    })
+    
+    assert.ok(capturedBody)
+    assert.equal(capturedBody.config.bazel_build_path, 'src/lib')
+    assert.equal(capturedBody.config.bazel_target_name, 'my_lib')
+  } finally {
+    server.close()
+  }
 })
 
 test('submitJob throws ControlPlaneError on an invalid token', async () => {

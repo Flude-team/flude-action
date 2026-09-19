@@ -18,6 +18,29 @@ inputs:
       Optional path to compile_commands.json, generated prior to this step (e.g., via cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON).
       Must be a relative path within the repository.
     required: false
+  vcxproj-path:
+    description: >
+      Optional path to a .vcxproj file (MSVC project), used to statically extract include paths and macros when compile_commands.json isn't available. Must be a relative path within the repository.
+    required: false
+  vcxproj-configuration:
+    description: >
+      Optional MSBuild Configuration to select from the .vcxproj (e.g. 'Debug'). Defaults to 'Release' if the .vcxproj has no matching block.
+    required: false
+  vcxproj-platform:
+    description: >
+      Optional MSBuild Platform to select from the .vcxproj (e.g. 'ARM64'). Defaults to 'x64' if the .vcxproj has no matching block.
+    required: false
+  bazel-build-path:
+    description: >
+      Optional path to a BUILD or BUILD.bazel file, used to statically extract include paths and
+      macros for a cc_library/cc_binary/cc_test target when compile_commands.json isn't available.
+      Must be a relative path within the repository (to the file itself, not its containing
+      directory).
+    required: false
+  bazel-target-name:
+    description: >
+      Optional Bazel target name (e.g. my_lib).
+    required: false
   api-base-url:
     description: >
       Base URL of the Flude SaaS control-plane API.

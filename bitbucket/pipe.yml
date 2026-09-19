@@ -19,6 +19,16 @@ variables:
     default: 'python'
   - name: FLUDE_COMPILE_COMMANDS_PATH
     default: ''
+  - name: FLUDE_VCXPROJ_PATH
+    default: ''
+  - name: FLUDE_VCXPROJ_CONFIGURATION
+    default: ''
+  - name: FLUDE_VCXPROJ_PLATFORM
+    default: ''
+  - name: FLUDE_BAZEL_BUILD_PATH
+    default: ''
+  - name: FLUDE_BAZEL_TARGET_NAME
+    default: ''
   - name: FLUDE_POLL_INTERVAL_SECONDS
     default: '10'
   - name: FLUDE_MAX_WAIT_SECONDS

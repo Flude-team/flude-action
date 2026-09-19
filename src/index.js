@@ -26,6 +26,11 @@ export async function run() {
   const strict = getBooleanInput('strict')
   const language = getInput('language') || 'python'
   const compileCommandsPath = getInput('compile-commands-path')
+  const vcxprojPath = getInput('vcxproj-path')
+  const vcxprojConfiguration = getInput('vcxproj-configuration')
+  const vcxprojPlatform = getInput('vcxproj-platform')
+  const bazelBuildPath = getInput('bazel-build-path')
+  const bazelTargetName = getInput('bazel-target-name')
   const pollIntervalSeconds = Number(getInput('poll-interval-seconds') || '10')
   const maxWaitSeconds = Number(getInput('max-wait-seconds') || '900')
 
@@ -43,6 +48,11 @@ export async function run() {
     platform: 'github',
     language,
     compileCommandsPath,
+    vcxprojPath,
+    vcxprojConfiguration,
+    vcxprojPlatform,
+    bazelBuildPath,
+    bazelTargetName,
     format,
     strict,
   })
