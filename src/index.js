@@ -31,6 +31,7 @@ export async function run() {
   const vcxprojPlatform = getInput('vcxproj-platform')
   const bazelBuildPath = getInput('bazel-build-path')
   const bazelTargetName = getInput('bazel-target-name')
+  const cmakeListsPath = getInput('cmake-lists-path')
   const pollIntervalSeconds = Number(getInput('poll-interval-seconds') || '10')
   const maxWaitSeconds = Number(getInput('max-wait-seconds') || '900')
 
@@ -53,6 +54,7 @@ export async function run() {
     vcxprojPlatform,
     bazelBuildPath,
     bazelTargetName,
+    cmakeListsPath,
     format,
     strict,
   })

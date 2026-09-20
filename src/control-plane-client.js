@@ -82,7 +82,7 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   return parsed
 }
 
-export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath, vcxprojPath, vcxprojConfiguration, vcxprojPlatform, bazelBuildPath, bazelTargetName }) {
+export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath, vcxprojPath, vcxprojConfiguration, vcxprojPlatform, bazelBuildPath, bazelTargetName, cmakeListsPath }) {
   const body = await request(baseUrl, '/v1/jobs', {
     method: 'POST',
     token,
@@ -99,7 +99,8 @@ export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, plat
         vcxproj_configuration: vcxprojConfiguration,
         vcxproj_platform: vcxprojPlatform,
         bazel_build_path: bazelBuildPath,
-        bazel_target_name: bazelTargetName
+        bazel_target_name: bazelTargetName,
+        cmake_lists_path: cmakeListsPath
       },
     },
   })

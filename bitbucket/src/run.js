@@ -41,6 +41,7 @@ export async function run() {
   const vcxprojPlatform = getEnv('FLUDE_VCXPROJ_PLATFORM')
   const bazelBuildPath = getEnv('FLUDE_BAZEL_BUILD_PATH')
   const bazelTargetName = getEnv('FLUDE_BAZEL_TARGET_NAME')
+  const cmakeListsPath = getEnv('FLUDE_CMAKE_LISTS_PATH')
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
   const maxWaitSeconds = Number(getEnv('FLUDE_MAX_WAIT_SECONDS', { defaultValue: '900' }))
   // Real Bitbucket Pipelines routes Bitbucket API calls through a fixed
@@ -71,6 +72,7 @@ export async function run() {
     vcxprojPlatform,
     bazelBuildPath,
     bazelTargetName,
+    cmakeListsPath,
   })
   console.log(`Job submitted: ${jobId}`)
 

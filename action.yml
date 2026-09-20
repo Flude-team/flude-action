@@ -41,6 +41,12 @@ inputs:
     description: >
       Optional Bazel target name (e.g. my_lib).
     required: false
+  cmake-lists-path:
+    description: >
+      Optional path to a CMakeLists.txt file, used to statically extract include paths and
+      macros (directory-scoped) when compile_commands.json isn't available.
+      Must be a relative path within the repository (to the file itself, not its containing directory).
+    required: false
   api-base-url:
     description: >
       Base URL of the Flude SaaS control-plane API.
