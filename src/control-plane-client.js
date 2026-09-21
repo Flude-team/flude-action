@@ -82,7 +82,7 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   return parsed
 }
 
-export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath, vcxprojPath, vcxprojConfiguration, vcxprojPlatform, bazelBuildPath, bazelTargetName, cmakeListsPath }) {
+export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath, compileCommandsContent, vcxprojPath, vcxprojConfiguration, vcxprojPlatform, bazelBuildPath, bazelTargetName, cmakeListsPath }) {
   const body = await request(baseUrl, '/v1/jobs', {
     method: 'POST',
     token,
@@ -94,7 +94,12 @@ export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, plat
       strict,
       config: {
         language,
+        // DEL-B75: compile_commands_path is kept too (harmless, and now actually wired through
+        // to job_runner.py) as a fallback for the rare client who committed the file for real --
+        // compile_commands_content is the one that actually works for the common .gitignore'd
+        // case (see index.js's readCompileCommandsContent()).
         compile_commands_path: compileCommandsPath,
+        compile_commands_content: compileCommandsContent,
         vcxproj_path: vcxprojPath,
         vcxproj_configuration: vcxprojConfiguration,
         vcxproj_platform: vcxprojPlatform,

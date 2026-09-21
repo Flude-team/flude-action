@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { getInput, getBooleanInput } from './github-input.js'
 import { setOutput, logNotice, logError, logWarning } from './github-output.js'
 import { submitJob, RateLimitError, ControlPlaneError } from './control-plane-client.js'
@@ -19,6 +20,34 @@ function readRepositoryContext() {
   }
 }
 
+// DEL-B75: compile_commands.json is conventionally .gitignore'd, so passing only its path
+// through to the control-plane never worked -- flude-worker's own independent clone of the
+// repository never has the file, and the mismatch previously failed silently server-side (one
+// log line the client never sees). This step runs on the client's own runner, right after their
+// build step generated the file, so it can just read it here and send the content instead.
+// Matches control-plane's own MAX_COMPILE_COMMANDS_CONTENT_BYTES cap (900 KiB) -- checked
+// client-side too so an oversized file fails fast with a clear message here, not a vague 400
+// from the API.
+const MAX_COMPILE_COMMANDS_CONTENT_BYTES = 900 * 1024
+
+export function readCompileCommandsContent(compileCommandsPath) {
+  if (!compileCommandsPath) {
+    return undefined
+  }
+  let content
+  try {
+    content = readFileSync(compileCommandsPath, 'utf8')
+  } catch (err) {
+    logWarning(`compile-commands-path was set to "${compileCommandsPath}" but the file could not be read (${err.message}) -- proceeding without build context.`)
+    return undefined
+  }
+  if (Buffer.byteLength(content, 'utf8') > MAX_COMPILE_COMMANDS_CONTENT_BYTES) {
+    logWarning(`compile-commands-path "${compileCommandsPath}" is larger than ${MAX_COMPILE_COMMANDS_CONTENT_BYTES} bytes -- proceeding without build context.`)
+    return undefined
+  }
+  return content
+}
+
 export async function run() {
   const apiToken = getInput('api-token', { required: true })
   const apiBaseUrl = getInput('api-base-url', { required: true })
@@ -26,6 +55,7 @@ export async function run() {
   const strict = getBooleanInput('strict')
   const language = getInput('language') || 'python'
   const compileCommandsPath = getInput('compile-commands-path')
+  const compileCommandsContent = readCompileCommandsContent(compileCommandsPath)
   const vcxprojPath = getInput('vcxproj-path')
   const vcxprojConfiguration = getInput('vcxproj-configuration')
   const vcxprojPlatform = getInput('vcxproj-platform')
@@ -49,6 +79,7 @@ export async function run() {
     platform: 'github',
     language,
     compileCommandsPath,
+    compileCommandsContent,
     vcxprojPath,
     vcxprojConfiguration,
     vcxprojPlatform,

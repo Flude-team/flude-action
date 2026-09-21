@@ -16,7 +16,10 @@ inputs:
   compile-commands-path:
     description: >
       Optional path to compile_commands.json, generated prior to this step (e.g., via cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON).
-      Must be a relative path within the repository.
+      Read from disk by this action itself (it runs right after your build step, on the same
+      runner) and its content sent to the control-plane -- compile_commands.json is conventionally
+      .gitignore'd, so only the path would never reach the backend's own independent clone of your
+      repository. Path is relative to the repository root (i.e. $GITHUB_WORKSPACE).
     required: false
   vcxproj-path:
     description: >

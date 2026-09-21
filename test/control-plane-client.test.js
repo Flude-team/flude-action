@@ -107,6 +107,59 @@ test('submitJob maps cmakeListsPath to config payload', async () => {
   }
 })
 
+test('submitJob maps compileCommandsPath, compileCommandsContent to config payload', async () => {
+  let capturedBody = null
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      capturedBody = JSON.parse(raw)
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      compileCommandsPath: 'build/compile_commands.json',
+      compileCommandsContent: '[{"file":"a.cpp"}]'
+    })
+
+    assert.ok(capturedBody)
+    assert.equal(capturedBody.config.compile_commands_path, 'build/compile_commands.json')
+    assert.equal(capturedBody.config.compile_commands_content, '[{"file":"a.cpp"}]')
+  } finally {
+    server.close()
+  }
+})
+
+test('submitJob omits compileCommandsContent from config payload when unset', async () => {
+  let capturedBody = null
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      capturedBody = JSON.parse(raw)
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    await submitJob(baseUrl, 'test-token', { ...basePayload })
+
+    assert.ok(capturedBody)
+    assert.equal('compile_commands_content' in capturedBody.config, false)
+  } finally {
+    server.close()
+  }
+})
+
 test('submitJob throws ControlPlaneError on an invalid token', async () => {
   await withMockServer({ token: 'real-token' }, async (baseUrl) => {
     await assert.rejects(() => submitJob(baseUrl, 'wrong-token', basePayload), ControlPlaneError)
