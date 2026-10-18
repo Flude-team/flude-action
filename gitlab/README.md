@@ -37,6 +37,19 @@ include:
   - remote: 'https://raw.githubusercontent.com/Flude-team/flude-action/main/gitlab/flude.gitlab-ci.yml'
 ```
 
+### Example with C++ syntactic parser backend
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/Flude-team/flude-action/main/gitlab/flude.gitlab-ci.yml'
+
+flude:
+  variables:
+    FLUDE_LANGUAGE: 'cpp'
+    FLUDE_PARSER_BACKEND: 'syntactic'
+    FLUDE_COMPILE_COMMANDS_PATH: 'compile_commands.json'
+```
+
 That adds a `flude` job to your pipeline's `test` stage, gated by default to
 merge-request pipelines and pushes to the default branch (set
 `FLUDE_DISABLE: "true"` as a variable to turn it off entirely). Set the two
@@ -53,6 +66,7 @@ variables of the same name):
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend: `doxygen` (default if omitted) or `syntactic`. C++ only (`FLUDE_LANGUAGE: cpp`). Cannot be combined with vcxproj, bazel, or cmake inputs. |
 | `FLUDE_FORMAT` | `markdown` | `markdown` or `html`. |
 | `FLUDE_STRICT` | `false` | Enable Strict Compilation Mode. |
 | `FLUDE_POLL_INTERVAL_SECONDS` | `10` | Delay between `GET /jobs/{id}` polls. |

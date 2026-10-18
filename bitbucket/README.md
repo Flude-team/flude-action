@@ -154,6 +154,21 @@ pipelines:
                 FLUDE_API_BASE_URL: $FLUDE_API_BASE_URL
 ```
 
+### Example with C++ syntactic parser backend
+
+```yaml
+- step:
+    name: Flude Docs
+    script:
+      - pipe: docker://ghcr.io/flude-team/bitbucket-pipe:0.1.0
+        variables:
+          FLUDE_API_TOKEN: $FLUDE_API_TOKEN
+          FLUDE_API_BASE_URL: $FLUDE_API_BASE_URL
+          FLUDE_LANGUAGE: 'cpp'
+          FLUDE_PARSER_BACKEND: 'syntactic'
+          FLUDE_COMPILE_COMMANDS_PATH: 'compile_commands.json'
+```
+
 `FLUDE_API_TOKEN`/`FLUDE_API_BASE_URL` are set as **repository variables**
 (Repository settings > Pipelines > Repository variables, mask the token) -
 same Clerk API Key mechanism as the GitHub/GitLab clients (`DEL-B22`/`DEL-B41`).
@@ -162,6 +177,7 @@ same Clerk API Key mechanism as the GitHub/GitLab clients (`DEL-B22`/`DEL-B41`).
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend: `doxygen` (default if omitted) or `syntactic`. C++ only (`FLUDE_LANGUAGE: cpp`). Cannot be combined with vcxproj, bazel, or cmake inputs. |
 | `FLUDE_FORMAT` | `markdown` | `markdown` or `html`. |
 | `FLUDE_STRICT` | `false` | Enable Strict Compilation Mode. |
 | `FLUDE_POLL_INTERVAL_SECONDS` | `10` | Delay between `GET /jobs/{id}` polls. |

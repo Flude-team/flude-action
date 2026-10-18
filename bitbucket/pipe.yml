@@ -31,6 +31,8 @@ variables:
     default: ''
   - name: FLUDE_CMAKE_LISTS_PATH
     default: ''
+  - name: FLUDE_PARSER_BACKEND
+    default: ''
   - name: FLUDE_POLL_INTERVAL_SECONDS
     default: '10'
   - name: FLUDE_MAX_WAIT_SECONDS

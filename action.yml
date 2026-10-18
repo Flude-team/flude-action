@@ -50,6 +50,13 @@ inputs:
       macros (directory-scoped) when compile_commands.json isn't available.
       Must be a relative path within the repository (to the file itself, not its containing directory).
     required: false
+  parser-backend:
+    description: >
+      Optional C++ parser backend: 'doxygen' (default) or 'syntactic'.
+      'syntactic' is C++ only (language: cpp) and cannot be combined with
+      vcxproj, bazel, or cmake build-context inputs.
+    required: false
+    default: ''
   api-base-url:
     description: >
       Base URL of the Flude SaaS control-plane API.
@@ -80,6 +87,8 @@ outputs:
     description: >
       Terminal job status (e.g. succeeded, failed, rejected_too_large,
       rejected_organization, rejected_private).
+  parser-backend:
+    description: 'The parser backend that actually ran (e.g. doxygen, syntactic), if reported by the control-plane.'
   result-url:
     description: 'Signed, short-TTL GCS URL to the result archive. It expires quickly - download it immediately.'
   result-path:

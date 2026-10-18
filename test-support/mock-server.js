@@ -91,8 +91,43 @@ export function createMockControlPlane({ token = 'test-token', resultBody = 'fak
         }
       }
 
+      const config = payload.config || {}
+      if (config.parser_backend !== undefined) {
+        if (typeof config.parser_backend !== 'string' || !['doxygen', 'syntactic'].includes(config.parser_backend)) {
+          send(400, { error: `Invalid parser_backend: '${config.parser_backend}'. Must be 'doxygen' or 'syntactic'` })
+          return
+        }
+        if (config.parser_backend === 'syntactic') {
+          if (config.language !== 'cpp') {
+            send(400, { error: `parser_backend 'syntactic' is only supported for cpp, not ${config.language}` })
+            return
+          }
+          const disallowed = [
+            'vcxproj_path',
+            'vcxproj_configuration',
+            'vcxproj_platform',
+            'bazel_build_path',
+            'bazel_target_name',
+            'cmake_lists_path',
+          ]
+          for (const field of disallowed) {
+            if (config[field] !== undefined && config[field] !== null && config[field] !== '') {
+              send(400, { error: `parser_backend 'syntactic' does not support ${field} (build-context extractor requires native backend which is excluded from production binary)` })
+              return
+            }
+          }
+        }
+      }
+
       const jobId = randomUUID()
-      jobs.set(jobId, { scenario: scenarioFromRepositoryUrl(payload.repository_url || ''), pollCount: 0 })
+      const jobData = {
+        scenario: scenarioFromRepositoryUrl(payload.repository_url || ''),
+        pollCount: 0,
+      }
+      if (!repoUrl.includes('scenario-no-parser-backend')) {
+        jobData.parser_backend = config.parser_backend || 'doxygen'
+      }
+      jobs.set(jobId, jobData)
       send(202, { job_id: jobId })
       return
     }
@@ -114,10 +149,14 @@ export function createMockControlPlane({ token = 'test-token', resultBody = 'fak
       }
 
       if (job.scenario === 'succeed') {
-        send(200, {
+        const result = {
           status: 'succeeded',
           result_url: `http://127.0.0.1:${server.address().port}/fake-results/${match[1]}.zip`,
-        })
+        }
+        if (job.parser_backend) {
+          result.parser_backend = job.parser_backend
+        }
+        send(200, result)
         return
       }
 

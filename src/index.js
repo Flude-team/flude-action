@@ -7,6 +7,7 @@ import { downloadResult, inferResultFilename } from './download.js'
 import { reportGitHubFindings } from './github-reporting.js'
 
 const VALID_FORMATS = new Set(['hugo_markdown', 'html'])
+const VALID_PARSER_BACKENDS = new Set(['doxygen', 'syntactic'])
 
 function readRepositoryContext() {
   const repository = process.env.GITHUB_REPOSITORY
@@ -54,6 +55,7 @@ export async function run() {
   const format = getInput('format') || 'hugo_markdown'
   const strict = getBooleanInput('strict')
   const language = getInput('language') || 'python'
+  const parserBackend = getInput('parser-backend')
   const compileCommandsPath = getInput('compile-commands-path')
   const compileCommandsContent = readCompileCommandsContent(compileCommandsPath)
   const vcxprojPath = getInput('vcxproj-path')
@@ -67,6 +69,20 @@ export async function run() {
 
   if (!VALID_FORMATS.has(format)) {
     throw new Error(`Invalid 'format' input: "${format}" (expected 'hugo_markdown' or 'html').`)
+  }
+
+  if (parserBackend) {
+    if (!VALID_PARSER_BACKENDS.has(parserBackend)) {
+      throw new Error(`Invalid 'parser-backend' input: "${parserBackend}" (expected 'doxygen' or 'syntactic').`)
+    }
+    if (parserBackend === 'syntactic') {
+      if (language !== 'cpp') {
+        throw new Error(`The 'syntactic' parser backend is only supported for C++ (language: cpp), got "${language}".`)
+      }
+      if (vcxprojPath || vcxprojConfiguration || vcxprojPlatform || bazelBuildPath || bazelTargetName || cmakeListsPath) {
+        throw new Error(`The 'syntactic' parser backend cannot be combined with vcxproj, bazel, or cmake build-context inputs.`)
+      }
+    }
   }
 
   const { repositoryUrl, commitSha } = readRepositoryContext()
@@ -86,6 +102,7 @@ export async function run() {
     bazelBuildPath,
     bazelTargetName,
     cmakeListsPath,
+    parserBackend,
     format,
     strict,
   })
@@ -98,6 +115,9 @@ export async function run() {
   })
 
   setOutput('status', finalStatus.status)
+  if (finalStatus.parser_backend) {
+    setOutput('parser-backend', finalStatus.parser_backend)
+  }
 
   const rejectionMessage = describeTerminalStatus(finalStatus.status)
   if (rejectionMessage) {

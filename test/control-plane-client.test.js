@@ -309,3 +309,182 @@ test('submitJob falls back to token-renewal message on HTTP 403 with no error fi
   })
 })
 
+test('submitJob omits config.parser_backend when parserBackend is absent or empty', async () => {
+  let capturedBody1 = null
+  let capturedBody2 = null
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      if (!capturedBody1) {
+        capturedBody1 = JSON.parse(raw)
+      } else {
+        capturedBody2 = JSON.parse(raw)
+      }
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    // 1. Without parserBackend property at all
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+    })
+    // 2. With empty string parserBackend
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: '',
+    })
+
+    assert.ok(capturedBody1)
+    assert.ok(capturedBody2)
+    assert.equal(capturedBody1.config.parser_backend, undefined)
+    assert.equal('parser_backend' in capturedBody1.config, false)
+    assert.equal(capturedBody2.config.parser_backend, undefined)
+    assert.equal('parser_backend' in capturedBody2.config, false)
+    // Byte-identical serialized config between undefined and empty string
+    assert.equal(JSON.stringify(capturedBody1.config), JSON.stringify(capturedBody2.config))
+  } finally {
+    server.close()
+  }
+})
+
+test('submitJob maps parserBackend to config payload when provided', async () => {
+  let capturedBodies = []
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      capturedBodies.push(JSON.parse(raw))
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: 'doxygen',
+    })
+    await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: 'syntactic',
+    })
+
+    assert.equal(capturedBodies.length, 2)
+    assert.equal(capturedBodies[0].config.parser_backend, 'doxygen')
+    assert.equal(capturedBodies[1].config.parser_backend, 'syntactic')
+  } finally {
+    server.close()
+  }
+})
+
+test('mock control-plane enforces server validation rules for config.parser_backend', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    // 1. Unknown parser_backend rejected with 400
+    await assert.rejects(
+      () => submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        language: 'cpp',
+        parserBackend: 'invalid_backend',
+      }),
+      (err) => {
+        assert.ok(err instanceof ControlPlaneError)
+        assert.equal(err.status, 400)
+        assert.match(err.body.error, /Invalid parser_backend/)
+        return true
+      }
+    )
+
+    // 2. syntactic rejected on non-cpp language with 400
+    await assert.rejects(
+      () => submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        language: 'python',
+        parserBackend: 'syntactic',
+      }),
+      (err) => {
+        assert.ok(err instanceof ControlPlaneError)
+        assert.equal(err.status, 400)
+        assert.match(err.body.error, /only supported for cpp/)
+        return true
+      }
+    )
+
+    // 3. syntactic rejected when combined with vcxproj_path
+    await assert.rejects(
+      () => submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        language: 'cpp',
+        parserBackend: 'syntactic',
+        vcxprojPath: 'project.vcxproj',
+      }),
+      (err) => {
+        assert.ok(err instanceof ControlPlaneError)
+        assert.equal(err.status, 400)
+        assert.match(err.body.error, /does not support vcxproj_path/)
+        return true
+      }
+    )
+
+    // 4. syntactic rejected when combined with bazel_build_path
+    await assert.rejects(
+      () => submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        language: 'cpp',
+        parserBackend: 'syntactic',
+        bazelBuildPath: 'BUILD.bazel',
+      }),
+      (err) => {
+        assert.ok(err instanceof ControlPlaneError)
+        assert.equal(err.status, 400)
+        assert.match(err.body.error, /does not support bazel_build_path/)
+        return true
+      }
+    )
+
+    // 5. syntactic rejected when combined with cmake_lists_path
+    await assert.rejects(
+      () => submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        language: 'cpp',
+        parserBackend: 'syntactic',
+        cmakeListsPath: 'CMakeLists.txt',
+      }),
+      (err) => {
+        assert.ok(err instanceof ControlPlaneError)
+        assert.equal(err.status, 400)
+        assert.match(err.body.error, /does not support cmake_lists_path/)
+        return true
+      }
+    )
+
+    // 6. syntactic succeeds when combined with compile_commands_path / compile_commands_content
+    const jobId = await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: 'syntactic',
+      compileCommandsPath: 'compile_commands.json',
+      compileCommandsContent: '[{"file":"foo.cpp"}]',
+    })
+    assert.ok(jobId)
+
+    // 7. GET status echoes parser_backend on success
+    const status = await getJobStatus(baseUrl, 'test-token', jobId)
+    // poll once more to reach succeeded (mock takes 1 poll tick)
+    const finalStatus = await getJobStatus(baseUrl, 'test-token', jobId)
+    assert.equal(finalStatus.status, 'succeeded')
+    assert.equal(finalStatus.parser_backend, 'syntactic')
+  })
+})
+
+

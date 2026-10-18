@@ -5,6 +5,7 @@ import { reportGitLabFindings } from './gitlab-reporting.js'
 import { getEnv, getBooleanEnv } from '../../src/env-input.js'
 
 const VALID_FORMATS = new Set(['hugo_markdown', 'html'])
+const VALID_PARSER_BACKENDS = new Set(['doxygen', 'syntactic'])
 
 function readRepositoryContext() {
   const projectUrl = process.env.CI_PROJECT_URL
@@ -26,6 +27,7 @@ export async function run() {
   const format = getEnv('FLUDE_FORMAT', { defaultValue: 'hugo_markdown' })
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
   const language = getEnv('FLUDE_LANGUAGE') || 'python'
+  const parserBackend = getEnv('FLUDE_PARSER_BACKEND')
   const compileCommandsPath = getEnv('FLUDE_COMPILE_COMMANDS_PATH')
   const vcxprojPath = getEnv('FLUDE_VCXPROJ_PATH')
   const vcxprojConfiguration = getEnv('FLUDE_VCXPROJ_CONFIGURATION')
@@ -39,6 +41,20 @@ export async function run() {
 
   if (!VALID_FORMATS.has(format)) {
     throw new Error(`Invalid FLUDE_FORMAT: "${format}" (expected 'hugo_markdown' or 'html').`)
+  }
+
+  if (parserBackend) {
+    if (!VALID_PARSER_BACKENDS.has(parserBackend)) {
+      throw new Error(`Invalid FLUDE_PARSER_BACKEND: "${parserBackend}" (expected 'doxygen' or 'syntactic').`)
+    }
+    if (parserBackend === 'syntactic') {
+      if (language !== 'cpp') {
+        throw new Error(`The 'syntactic' parser backend is only supported for C++ (language: cpp), got "${language}".`)
+      }
+      if (vcxprojPath || vcxprojConfiguration || vcxprojPlatform || bazelBuildPath || bazelTargetName || cmakeListsPath) {
+        throw new Error(`The 'syntactic' parser backend cannot be combined with vcxproj, bazel, or cmake build-context inputs.`)
+      }
+    }
   }
 
   const { repositoryUrl, commitSha } = readRepositoryContext()
@@ -61,6 +77,7 @@ export async function run() {
     bazelBuildPath,
     bazelTargetName,
     cmakeListsPath,
+    parserBackend,
   })
   console.log(`Job submitted: ${jobId}`)
 
@@ -68,6 +85,10 @@ export async function run() {
     intervalMs: pollIntervalSeconds * 1000,
     maxWaitMs: maxWaitSeconds * 1000,
   })
+
+  if (finalStatus.parser_backend) {
+    console.log(`Parser backend: ${finalStatus.parser_backend}`)
+  }
 
   const rejectionMessage = describeTerminalStatus(finalStatus.status)
   if (rejectionMessage) {

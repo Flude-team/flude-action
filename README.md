@@ -50,6 +50,19 @@ dependencies** — the control-plane clones your public repository itself.
     sarif_file: ${{ steps.flude.outputs.sarif-path }}
 ```
 
+#### Example with C++ syntactic parser backend
+
+```yaml
+- uses: flude/flude-action@v1
+  id: flude
+  with:
+    api-token: ${{ secrets.FLUDE_API_TOKEN }}
+    api-base-url: ${{ vars.FLUDE_CONTROL_PLANE_URL }}
+    language: cpp
+    parser-backend: syntactic
+    compile-commands-path: compile_commands.json
+```
+
 Repository and commit are taken from CI context (`GITHUB_REPOSITORY`,
 `GITHUB_SHA`) — there's no separate "path to sources" input, since the
 control-plane clones the repository itself.
@@ -72,6 +85,7 @@ and the data collected while your job runs (`DEL-A12`).
 | --- | --- | --- | --- |
 | `api-token` | yes | — | Clerk API Key, sent as `Authorization: Bearer <token>`. |
 | `api-base-url` | yes | — | Base URL of the control-plane API. |
+| `parser-backend` | no | — | Optional C++ parser backend: `doxygen` (default if omitted) or `syntactic`. C++ only (`language: cpp`). Cannot be combined with vcxproj, bazel, or cmake inputs. |
 | `format` | no | `hugo_markdown` | `hugo_markdown` or `html`. |
 | `strict` | no | `false` | Enable Strict Compilation Mode. |
 | `poll-interval-seconds` | no | `10` | Delay between `GET /jobs/{id}` polls. |
@@ -83,6 +97,7 @@ and the data collected while your job runs (`DEL-A12`).
 | --- | --- |
 | `job-id` | Job ID assigned by the control-plane. |
 | `status` | Terminal status (`succeeded`, `failed`, `rejected_too_large`, `rejected_organization`, `rejected_private`, ...). |
+| `parser-backend` | The parser backend that actually ran (e.g. `doxygen`, `syntactic`), if reported by the control-plane. |
 | `result-url` | Signed, short-TTL GCS URL. **Download it immediately** — see "Downloading the result" below. |
 | `result-path` | Local path to the downloaded archive. |
 | `sarif-path` | Local path to a SARIF report extracted from the archive, if one was found. Empty otherwise — see "GitHub-specific reporting" below. |
