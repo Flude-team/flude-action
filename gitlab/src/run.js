@@ -26,7 +26,7 @@ export async function run() {
   const apiBaseUrl = getEnv('FLUDE_API_BASE_URL', { required: true })
   const format = getEnv('FLUDE_FORMAT', { defaultValue: 'hugo_markdown' })
   const strict = getBooleanEnv('FLUDE_STRICT', { defaultValue: 'false' })
-  const language = getEnv('FLUDE_LANGUAGE') || 'python'
+  const language = getEnv('FLUDE_LANGUAGE') || 'cpp'
   const parserBackend = getEnv('FLUDE_PARSER_BACKEND')
   const compileCommandsPath = getEnv('FLUDE_COMPILE_COMMANDS_PATH')
   const vcxprojPath = getEnv('FLUDE_VCXPROJ_PATH')

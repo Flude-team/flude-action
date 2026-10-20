@@ -10,9 +10,11 @@ inputs:
       repository or organization secret). Sent to the control-plane as a Bearer token.
     required: true
   language:
-    description: 'Project language (e.g. python, go)'
+    description: >
+      Project language. Only 'cpp' is accepted by the Flude SaaS for now; other languages are
+      rejected by the control-plane with HTTP 400.
     required: false
-    default: 'python'
+    default: 'cpp'
   compile-commands-path:
     description: >
       Optional path to compile_commands.json, generated prior to this step (e.g., via cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON).

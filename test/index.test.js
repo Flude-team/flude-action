@@ -112,6 +112,26 @@ test('run throws fail-fast error when parser-backend is syntactic but language i
   )
 })
 
+test('language defaults to cpp: syntactic without a language input reaches the build-context check, not the language check', async () => {
+  await withEnv(
+    {
+      GITHUB_REPOSITORY: 'acme/repo',
+      GITHUB_SHA: 'abc123456789',
+      'INPUT_API-TOKEN': 'test-token',
+      'INPUT_API-BASE-URL': 'http://127.0.0.1:9999',
+      'INPUT_LANGUAGE': undefined,
+      'INPUT_PARSER-BACKEND': 'syntactic',
+      'INPUT_VCXPROJ-PATH': 'app.vcxproj',
+    },
+    async () => {
+      await assert.rejects(
+        () => run(),
+        /cannot be combined with vcxproj, bazel, or cmake build-context inputs\./
+      )
+    }
+  )
+})
+
 test('run throws fail-fast error when parser-backend is syntactic and build context inputs are provided', async () => {
   const buildContextCases = [
     { 'INPUT_VCXPROJ-PATH': 'app.vcxproj' },

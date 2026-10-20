@@ -16,7 +16,7 @@ variables:
   - name: FLUDE_STRICT
     default: 'false'
   - name: FLUDE_LANGUAGE
-    default: 'python'
+    default: 'cpp'
   - name: FLUDE_COMPILE_COMMANDS_PATH
     default: ''
   - name: FLUDE_VCXPROJ_PATH

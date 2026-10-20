@@ -55,7 +55,7 @@ export async function run() {
   const apiBaseUrl = getInput('api-base-url', { required: true })
   const format = getInput('format') || 'hugo_markdown'
   const strict = getBooleanInput('strict')
-  const language = getInput('language') || 'python'
+  const language = getInput('language') || 'cpp'
   const parserBackend = getInput('parser-backend')
   const compileCommandsPath = getInput('compile-commands-path')
   const compileCommandsContent = readCompileCommandsContent(compileCommandsPath)

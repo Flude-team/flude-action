@@ -43,7 +43,7 @@ flude:
   variables:
     FLUDE_FORMAT: 'hugo_markdown'
     FLUDE_STRICT: 'false'
-    FLUDE_LANGUAGE: 'python'
+    FLUDE_LANGUAGE: 'cpp'
     FLUDE_COMPILE_COMMANDS_PATH: ''
     FLUDE_VCXPROJ_PATH: ''
     FLUDE_VCXPROJ_CONFIGURATION: ''
