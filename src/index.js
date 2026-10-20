@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { getInput, getBooleanInput } from './github-input.js'
 import { setOutput, logNotice, logError, logWarning } from './github-output.js'
 import { submitJob, RateLimitError, ControlPlaneError } from './control-plane-client.js'
@@ -156,8 +157,17 @@ export async function run() {
   }
 }
 
-// Allow src/index.js to be imported by tests without triggering a real run.
-if (process.env.GITHUB_ACTIONS === 'true') {
+// Run only when this file is the process entry point, so tests can import it
+// without triggering a real run even when they themselves execute inside GitHub Actions.
+function isEntryPoint() {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return false
+  }
+}
+
+if (process.env.GITHUB_ACTIONS === 'true' && isEntryPoint()) {
   run().catch((error) => {
     if (error instanceof RateLimitError) {
       logError(error.message)
