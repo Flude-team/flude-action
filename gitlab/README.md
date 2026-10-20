@@ -66,7 +66,7 @@ variables of the same name):
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend: `doxygen` (default if omitted) or `syntactic`. C++ only (`FLUDE_LANGUAGE: cpp`). Cannot be combined with vcxproj, bazel, or cmake inputs. |
+| `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend: `doxygen` or `syntactic`. If omitted, the control-plane picks `syntactic` for C++ (`FLUDE_LANGUAGE: cpp`) jobs without vcxproj, bazel, or cmake inputs and `doxygen` for every other job. `syntactic` is C++ only and cannot be combined with vcxproj, bazel, or cmake inputs. |
 | `FLUDE_FORMAT` | `markdown` | `markdown` or `html`. |
 | `FLUDE_STRICT` | `false` | Enable Strict Compilation Mode. |
 | `FLUDE_POLL_INTERVAL_SECONDS` | `10` | Delay between `GET /jobs/{id}` polls. |

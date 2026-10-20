@@ -85,7 +85,7 @@ and the data collected while your job runs (`DEL-A12`).
 | --- | --- | --- | --- |
 | `api-token` | yes | — | Clerk API Key, sent as `Authorization: Bearer <token>`. |
 | `api-base-url` | yes | — | Base URL of the control-plane API. |
-| `parser-backend` | no | — | Optional C++ parser backend: `doxygen` (default if omitted) or `syntactic`. C++ only (`language: cpp`). Cannot be combined with vcxproj, bazel, or cmake inputs. |
+| `parser-backend` | no | — | Optional C++ parser backend: `doxygen` or `syntactic`. If omitted, the control-plane picks `syntactic` for C++ (`language: cpp`) jobs without vcxproj, bazel, or cmake inputs and `doxygen` for every other job. `syntactic` is C++ only and cannot be combined with vcxproj, bazel, or cmake inputs. |
 | `format` | no | `hugo_markdown` | `hugo_markdown` or `html`. |
 | `strict` | no | `false` | Enable Strict Compilation Mode. |
 | `poll-interval-seconds` | no | `10` | Delay between `GET /jobs/{id}` polls. |

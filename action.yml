@@ -52,9 +52,10 @@ inputs:
     required: false
   parser-backend:
     description: >
-      Optional C++ parser backend: 'doxygen' (default) or 'syntactic'.
-      'syntactic' is C++ only (language: cpp) and cannot be combined with
-      vcxproj, bazel, or cmake build-context inputs.
+      Optional C++ parser backend: 'doxygen' or 'syntactic'. If left empty the control-plane
+      picks one: 'syntactic' for C++ (language: cpp) jobs without vcxproj, bazel or cmake
+      inputs, 'doxygen' for every other job. 'syntactic' is C++ only and cannot be combined
+      with vcxproj, bazel, or cmake build-context inputs.
     required: false
     default: ''
   api-base-url:
