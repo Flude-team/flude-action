@@ -67,7 +67,7 @@ variables of the same name):
 | Variable | Default | Description |
 | --- | --- | --- |
 | `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend: `doxygen` or `syntactic`. If omitted, the control-plane picks `syntactic` for C++ jobs (and `doxygen` for every other job); the vcxproj/bazel/cmake inputs are read by the syntactic backend (macros, and include directories declared inside the repository). |
-| `FLUDE_FORMAT` | `markdown` | `markdown` or `html`. |
+| `FLUDE_FORMAT` | `hugo_markdown` | `hugo_markdown` or `html`. |
 | `FLUDE_STRICT` | `false` | Enable Strict Compilation Mode. |
 | `FLUDE_POLL_INTERVAL_SECONDS` | `10` | Delay between `GET /jobs/{id}` polls. |
 | `FLUDE_MAX_WAIT_SECONDS` | `900` | Client-side safety net only - the authoritative timeout (currently 10 minutes) is server-side. |
@@ -211,7 +211,7 @@ against the real control-plane.
   (`-/ci/editor`, Validate tab: "Pipeline syntax is correct"; Full
   configuration tab: the merged config shows the `flude:` job - `stage:
   test`, `image: node:20`, the `$FLUDE_DISABLE`/`merge_request_event`/
-  `$CI_COMMIT_BRANCH` rules, `FLUDE_FORMAT: markdown` - fully resolved from
+  `$CI_COMMIT_BRANCH` rules, `FLUDE_FORMAT: hugo_markdown` - fully resolved from
   `https://raw.githubusercontent.com/Flude-team/flude-action/main/gitlab/flude.gitlab-ci.yml`).
   This was checked in isolation (pasted into the editor, never committed)
   rather than as the actual template used by the two test MRs below, which

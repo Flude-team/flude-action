@@ -12,7 +12,7 @@ variables:
   - name: FLUDE_API_BASE_URL
     default: '${FLUDE_API_BASE_URL}'
   - name: FLUDE_FORMAT
-    default: 'markdown'
+    default: 'hugo_markdown'
   - name: FLUDE_STRICT
     default: 'false'
   - name: FLUDE_LANGUAGE
