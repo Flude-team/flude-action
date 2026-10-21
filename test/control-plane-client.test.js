@@ -420,53 +420,32 @@ test('mock control-plane enforces server validation rules for config.parser_back
       }
     )
 
-    // 3. syntactic rejected when combined with vcxproj_path
-    await assert.rejects(
-      () => submitJob(baseUrl, 'test-token', {
-        ...basePayload,
-        language: 'cpp',
-        parserBackend: 'syntactic',
-        vcxprojPath: 'project.vcxproj',
-      }),
-      (err) => {
-        assert.ok(err instanceof ControlPlaneError)
-        assert.equal(err.status, 400)
-        assert.match(err.body.error, /does not support vcxproj_path/)
-        return true
-      }
-    )
+    // 3. syntactic accepted when combined with vcxproj_path
+    const jobVcx = await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: 'syntactic',
+      vcxprojPath: 'project.vcxproj',
+    })
+    assert.ok(jobVcx)
 
-    // 4. syntactic rejected when combined with bazel_build_path
-    await assert.rejects(
-      () => submitJob(baseUrl, 'test-token', {
-        ...basePayload,
-        language: 'cpp',
-        parserBackend: 'syntactic',
-        bazelBuildPath: 'BUILD.bazel',
-      }),
-      (err) => {
-        assert.ok(err instanceof ControlPlaneError)
-        assert.equal(err.status, 400)
-        assert.match(err.body.error, /does not support bazel_build_path/)
-        return true
-      }
-    )
+    // 4. syntactic accepted when combined with bazel_build_path
+    const jobBazel = await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: 'syntactic',
+      bazelBuildPath: 'BUILD.bazel',
+    })
+    assert.ok(jobBazel)
 
-    // 5. syntactic rejected when combined with cmake_lists_path
-    await assert.rejects(
-      () => submitJob(baseUrl, 'test-token', {
-        ...basePayload,
-        language: 'cpp',
-        parserBackend: 'syntactic',
-        cmakeListsPath: 'CMakeLists.txt',
-      }),
-      (err) => {
-        assert.ok(err instanceof ControlPlaneError)
-        assert.equal(err.status, 400)
-        assert.match(err.body.error, /does not support cmake_lists_path/)
-        return true
-      }
-    )
+    // 5. syntactic accepted when combined with cmake_lists_path
+    const jobCmake = await submitJob(baseUrl, 'test-token', {
+      ...basePayload,
+      language: 'cpp',
+      parserBackend: 'syntactic',
+      cmakeListsPath: 'CMakeLists.txt',
+    })
+    assert.ok(jobCmake)
 
     // 6. syntactic succeeds when combined with compile_commands_path / compile_commands_content
     const jobId = await submitJob(baseUrl, 'test-token', {

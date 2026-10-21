@@ -80,9 +80,6 @@ export async function run() {
       if (language !== 'cpp') {
         throw new Error(`The 'syntactic' parser backend is only supported for C++ (language: cpp), got "${language}".`)
       }
-      if (vcxprojPath || vcxprojConfiguration || vcxprojPlatform || bazelBuildPath || bazelTargetName || cmakeListsPath) {
-        throw new Error(`The 'syntactic' parser backend cannot be combined with vcxproj, bazel, or cmake build-context inputs.`)
-      }
     }
   }
 

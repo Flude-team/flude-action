@@ -112,54 +112,63 @@ test('run throws fail-fast error when parser-backend is syntactic but language i
   )
 })
 
-test('language defaults to cpp: syntactic without a language input reaches the build-context check, not the language check', async () => {
-  await withEnv(
-    {
-      GITHUB_REPOSITORY: 'acme/repo',
-      GITHUB_SHA: 'abc123456789',
-      'INPUT_API-TOKEN': 'test-token',
-      'INPUT_API-BASE-URL': 'http://127.0.0.1:9999',
-      'INPUT_LANGUAGE': undefined,
-      'INPUT_PARSER-BACKEND': 'syntactic',
-      'INPUT_VCXPROJ-PATH': 'app.vcxproj',
-    },
-    async () => {
-      await assert.rejects(
-        () => run(),
-        /cannot be combined with vcxproj, bazel, or cmake build-context inputs\./
-      )
-    }
-  )
-})
-
-test('run throws fail-fast error when parser-backend is syntactic and build context inputs are provided', async () => {
-  const buildContextCases = [
-    { 'INPUT_VCXPROJ-PATH': 'app.vcxproj' },
-    { 'INPUT_VCXPROJ-CONFIGURATION': 'Release' },
-    { 'INPUT_VCXPROJ-PLATFORM': 'x64' },
-    { 'INPUT_BAZEL-BUILD-PATH': 'BUILD' },
-    { 'INPUT_BAZEL-TARGET-NAME': 'lib' },
-    { 'INPUT_CMAKE-LISTS-PATH': 'CMakeLists.txt' },
-  ]
-
-  for (const buildCase of buildContextCases) {
+test('language defaults to cpp: syntactic without a language input submits with language cpp and parser_backend syntactic', async () => {
+  let capturedBody = null
+  await withMockServer({ onJobSubmitted: (payload) => { capturedBody = payload } }, async (baseUrl) => {
     await withEnv(
       {
         GITHUB_REPOSITORY: 'acme/repo',
         GITHUB_SHA: 'abc123456789',
         'INPUT_API-TOKEN': 'test-token',
-        'INPUT_API-BASE-URL': 'http://127.0.0.1:9999',
-        'INPUT_LANGUAGE': 'cpp',
+        'INPUT_API-BASE-URL': baseUrl,
+        'INPUT_LANGUAGE': undefined,
         'INPUT_PARSER-BACKEND': 'syntactic',
-        ...buildCase,
+        'INPUT_POLL-INTERVAL-SECONDS': '0',
+        'INPUT_VCXPROJ-PATH': 'app.vcxproj',
       },
       async () => {
-        await assert.rejects(
-          () => run(),
-          /The 'syntactic' parser backend cannot be combined with vcxproj, bazel, or cmake build-context inputs\./
-        )
+        await run()
       }
     )
+    assert.ok(capturedBody)
+    assert.equal(capturedBody.config.language, 'cpp')
+    assert.equal(capturedBody.config.parser_backend, 'syntactic')
+    assert.equal(capturedBody.config.vcxproj_path, 'app.vcxproj')
+  })
+})
+
+test('run accepts syntactic parser-backend with build context inputs and forwards them in request body', async () => {
+  const buildContextCases = [
+    { input: { 'INPUT_VCXPROJ-PATH': 'app.vcxproj' }, field: 'vcxproj_path', expected: 'app.vcxproj' },
+    { input: { 'INPUT_VCXPROJ-CONFIGURATION': 'Release' }, field: 'vcxproj_configuration', expected: 'Release' },
+    { input: { 'INPUT_VCXPROJ-PLATFORM': 'x64' }, field: 'vcxproj_platform', expected: 'x64' },
+    { input: { 'INPUT_BAZEL-BUILD-PATH': 'BUILD' }, field: 'bazel_build_path', expected: 'BUILD' },
+    { input: { 'INPUT_BAZEL-TARGET-NAME': 'lib' }, field: 'bazel_target_name', expected: 'lib' },
+    { input: { 'INPUT_CMAKE-LISTS-PATH': 'CMakeLists.txt' }, field: 'cmake_lists_path', expected: 'CMakeLists.txt' },
+  ]
+
+  for (const { input, field, expected } of buildContextCases) {
+    let capturedBody = null
+    await withMockServer({ onJobSubmitted: (payload) => { capturedBody = payload } }, async (baseUrl) => {
+      await withEnv(
+        {
+          GITHUB_REPOSITORY: 'acme/repo',
+          GITHUB_SHA: 'abc123456789',
+          'INPUT_API-TOKEN': 'test-token',
+          'INPUT_API-BASE-URL': baseUrl,
+          'INPUT_LANGUAGE': 'cpp',
+          'INPUT_PARSER-BACKEND': 'syntactic',
+          'INPUT_POLL-INTERVAL-SECONDS': '0',
+          ...input,
+        },
+        async () => {
+          await run()
+        }
+      )
+      assert.ok(capturedBody)
+      assert.equal(capturedBody.config.parser_backend, 'syntactic')
+      assert.equal(capturedBody.config[field], expected)
+    })
   }
 })
 

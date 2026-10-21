@@ -76,34 +76,38 @@ test('GitLab run() fail-fast: FLUDE_PARSER_BACKEND=syntactic on non-cpp language
   )
 })
 
-test('GitLab run() fail-fast: FLUDE_PARSER_BACKEND=syntactic with build context inputs', async () => {
+test('GitLab run() accepts FLUDE_PARSER_BACKEND=syntactic with build context inputs and forwards them in request body', async () => {
   const buildContextVars = [
-    { FLUDE_VCXPROJ_PATH: 'project.vcxproj' },
-    { FLUDE_VCXPROJ_CONFIGURATION: 'Release' },
-    { FLUDE_VCXPROJ_PLATFORM: 'x64' },
-    { FLUDE_BAZEL_BUILD_PATH: 'BUILD' },
-    { FLUDE_BAZEL_TARGET_NAME: 'lib' },
-    { FLUDE_CMAKE_LISTS_PATH: 'CMakeLists.txt' },
+    { vars: { FLUDE_VCXPROJ_PATH: 'project.vcxproj' }, field: 'vcxproj_path', expected: 'project.vcxproj' },
+    { vars: { FLUDE_VCXPROJ_CONFIGURATION: 'Release' }, field: 'vcxproj_configuration', expected: 'Release' },
+    { vars: { FLUDE_VCXPROJ_PLATFORM: 'x64' }, field: 'vcxproj_platform', expected: 'x64' },
+    { vars: { FLUDE_BAZEL_BUILD_PATH: 'BUILD' }, field: 'bazel_build_path', expected: 'BUILD' },
+    { vars: { FLUDE_BAZEL_TARGET_NAME: 'lib' }, field: 'bazel_target_name', expected: 'lib' },
+    { vars: { FLUDE_CMAKE_LISTS_PATH: 'CMakeLists.txt' }, field: 'cmake_lists_path', expected: 'CMakeLists.txt' },
   ]
 
-  for (const vars of buildContextVars) {
-    await withEnv(
-      {
-        CI_PROJECT_URL: 'https://gitlab.com/acme/project',
-        CI_COMMIT_SHA: 'abc123456789',
-        FLUDE_API_TOKEN: 'test-token',
-        FLUDE_API_BASE_URL: 'http://127.0.0.1:9999',
-        FLUDE_LANGUAGE: 'cpp',
-        FLUDE_PARSER_BACKEND: 'syntactic',
-        ...vars,
-      },
-      async () => {
-        await assert.rejects(
-          () => run(),
-          /The 'syntactic' parser backend cannot be combined with vcxproj, bazel, or cmake build-context inputs\./
-        )
-      }
-    )
+  for (const { vars, field, expected } of buildContextVars) {
+    let capturedBody = null
+    await withMockServer({ onJobSubmitted: (payload) => { capturedBody = payload } }, async (baseUrl) => {
+      await withEnv(
+        {
+          CI_PROJECT_URL: 'https://gitlab.com/acme/project',
+          CI_COMMIT_SHA: 'abc123456789',
+          FLUDE_API_TOKEN: 'test-token',
+          FLUDE_API_BASE_URL: baseUrl,
+          FLUDE_LANGUAGE: 'cpp',
+          FLUDE_PARSER_BACKEND: 'syntactic',
+          FLUDE_POLL_INTERVAL_SECONDS: '0',
+          ...vars,
+        },
+        async () => {
+          await run()
+        }
+      )
+      assert.ok(capturedBody)
+      assert.equal(capturedBody.config.parser_backend, 'syntactic')
+      assert.equal(capturedBody.config[field], expected)
+    })
   }
 })
 

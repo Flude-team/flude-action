@@ -26,7 +26,7 @@ function scenarioFromRepositoryUrl(repositoryUrl) {
   return 'succeed'
 }
 
-export function createMockControlPlane({ token = 'test-token', resultBody = 'fake archive contents' } = {}) {
+export function createMockControlPlane({ token = 'test-token', resultBody = 'fake archive contents', onJobSubmitted } = {}) {
   const jobs = new Map()
 
   const server = createServer(async (req, res) => {
@@ -102,30 +102,19 @@ export function createMockControlPlane({ token = 'test-token', resultBody = 'fak
             send(400, { error: `parser_backend 'syntactic' is only supported for cpp, not ${config.language}` })
             return
           }
-          const disallowed = [
-            'vcxproj_path',
-            'vcxproj_configuration',
-            'vcxproj_platform',
-            'bazel_build_path',
-            'bazel_target_name',
-            'cmake_lists_path',
-          ]
-          for (const field of disallowed) {
-            if (config[field] !== undefined && config[field] !== null && config[field] !== '') {
-              send(400, { error: `parser_backend 'syntactic' does not support ${field} (build-context extractor requires native backend which is excluded from production binary)` })
-              return
-            }
-          }
         }
       }
 
+      if (typeof onJobSubmitted === 'function') {
+        onJobSubmitted(payload)
+      }
       const jobId = randomUUID()
       const jobData = {
         scenario: scenarioFromRepositoryUrl(payload.repository_url || ''),
         pollCount: 0,
       }
       if (!repoUrl.includes('scenario-no-parser-backend')) {
-        jobData.parser_backend = config.parser_backend || 'doxygen'
+        jobData.parser_backend = config.parser_backend || (config.language === 'cpp' ? 'syntactic' : 'doxygen')
       }
       jobs.set(jobId, jobData)
       send(202, { job_id: jobId })
