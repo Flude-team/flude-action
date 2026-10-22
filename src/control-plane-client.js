@@ -47,6 +47,14 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   }
 
   if (response.status === 401 || response.status === 403) {
+    // An explicit parser_backend the account is not allowed to use: NOT a token problem, so it must not fall through
+    // to the "renew your API token" message below.
+    if (response.status === 403 && parsed && parsed.error === 'parser_backend_not_allowed') {
+      throw new ControlPlaneError(
+        `The control-plane refused the job: ${parsed.message || 'this parser_backend is not available for this account'}.`,
+        { status: response.status, body: parsed }
+      )
+    }
     if (response.status === 403 && parsed && typeof parsed.error === 'string' && parsed.error.startsWith('rejected_')) {
       const REASONS = {
         rejected_organization: 'job submitted from an organization account, not a personal one',

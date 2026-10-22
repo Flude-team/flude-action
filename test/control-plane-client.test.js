@@ -225,6 +225,27 @@ test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejecte
   })
 })
 
+test('submitJob explains an HTTP 403 parser_backend_not_allowed instead of blaming the API token', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-403-parser_backend.git',
+        parserBackend: 'doxygen',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.equal(err.status, 403)
+      assert.equal(err.body.error, 'parser_backend_not_allowed')
+      assert.match(err.message, /refused the job/)
+      assert.match(err.message, /doxygen/)
+      assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
+      assert.doesNotMatch(err.message, /free-tier gate/)
+    }
+  })
+})
+
 test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejected_repo_organization', async () => {
   await withMockServer({}, async (baseUrl) => {
     try {

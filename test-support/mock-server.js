@@ -73,6 +73,14 @@ export function createMockControlPlane({ token = 'test-token', resultBody = 'fak
           send(403, { error: 'rejected_repo_organization' })
           return
         }
+        if (repoUrl.includes('scenario-403-parser_backend')) {
+          // the real control-plane's body for an explicit parser_backend=doxygen from an account without the entitlement
+          send(403, {
+            error: 'parser_backend_not_allowed',
+            message: "parser_backend 'doxygen' is not available for this account"
+          })
+          return
+        }
         if (repoUrl.includes('scenario-403-too_large')) {
           send(403, { error: 'rejected_too_large', message: 'Size is 500MB' })
           return

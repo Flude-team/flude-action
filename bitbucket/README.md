@@ -177,7 +177,7 @@ same Clerk API Key mechanism as the GitHub/GitLab clients (`DEL-B22`/`DEL-B41`).
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend: `doxygen` or `syntactic`. If omitted, the control-plane picks `syntactic` for C++ jobs (and `doxygen` for every other job); the vcxproj/bazel/cmake inputs are read by the syntactic backend (macros, and include directories declared inside the repository). |
+| `FLUDE_PARSER_BACKEND` | — | Optional C++ parser backend. If omitted, the control-plane uses `syntactic` for C++ jobs; the vcxproj/bazel/cmake inputs are read by the syntactic backend (macros, and include directories declared inside the repository). `doxygen` is not available to external accounts (the control-plane answers HTTP 403 `parser_backend_not_allowed`). |
 | `FLUDE_FORMAT` | `hugo_markdown` | `hugo_markdown` or `html`. |
 | `FLUDE_STRICT` | `false` | Enable Strict Compilation Mode. |
 | `FLUDE_POLL_INTERVAL_SECONDS` | `10` | Delay between `GET /jobs/{id}` polls. |
