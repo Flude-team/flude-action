@@ -85,6 +85,8 @@ and the data collected while your job runs (`DEL-A12`).
 | --- | --- | --- | --- |
 | `api-token` | yes | — | Clerk API Key, sent as `Authorization: Bearer <token>`. |
 | `api-base-url` | yes | — | Base URL of the control-plane API. |
+| `defines` | no | — | Macros your build passes with `-D`, one per line (`NAME` or `NAME=VALUE`) or a JSON array of strings; they select the `#if` branches the parser reads (e.g. `GPU_SUPPORT`). GitLab/Bitbucket: `FLUDE_DEFINES`. |
+| `cpp-std` | no | — | C++ standard the syntactic parser evaluates `#if` for: `c++11`, `c++14`, `c++17`, `c++20` or `c++23`. If omitted, the standard the repository's top-level `CMakeLists.txt` names (`CMAKE_CXX_STANDARD`, `cxx_std_NN`) is used, else `c++17`. GitLab/Bitbucket: `FLUDE_CPP_STD`. |
 | `parser-backend` | no | — | Optional C++ parser backend. If omitted, the control-plane uses `syntactic` for C++ jobs; the vcxproj/bazel/cmake inputs are read by the syntactic backend (macros, and include directories declared inside the repository). `doxygen` is not available to external accounts (the control-plane answers HTTP 403 `parser_backend_not_allowed`). |
 | `format` | no | `hugo_markdown` | `hugo_markdown` or `html`. |
 | `strict` | no | `false` | Enable Strict Compilation Mode. |

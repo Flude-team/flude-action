@@ -1,4 +1,4 @@
-import { submitJob, RateLimitError, ControlPlaneError } from '../../src/control-plane-client.js'
+import { submitJob, parseDefines, RateLimitError, ControlPlaneError } from '../../src/control-plane-client.js'
 import { pollUntilTerminal, describeTerminalStatus } from '../../src/poll.js'
 import { downloadResult, inferResultFilename } from '../../src/download.js'
 import { reportBitbucketFindings } from './bitbucket-reporting.js'
@@ -44,6 +44,8 @@ export async function run() {
   const bazelBuildPath = getEnv('FLUDE_BAZEL_BUILD_PATH')
   const bazelTargetName = getEnv('FLUDE_BAZEL_TARGET_NAME')
   const cmakeListsPath = getEnv('FLUDE_CMAKE_LISTS_PATH')
+  const defines = parseDefines(getEnv('FLUDE_DEFINES'))
+  const cppStd = getEnv('FLUDE_CPP_STD')
   const pollIntervalSeconds = Number(getEnv('FLUDE_POLL_INTERVAL_SECONDS', { defaultValue: '10' }))
   const maxWaitSeconds = Number(getEnv('FLUDE_MAX_WAIT_SECONDS', { defaultValue: '900' }))
   // Real Bitbucket Pipelines routes Bitbucket API calls through a fixed
@@ -87,6 +89,8 @@ export async function run() {
     bazelTargetName,
     cmakeListsPath,
     parserBackend,
+    defines,
+    cppStd,
   })
   console.log(`Job submitted: ${jobId}`)
 

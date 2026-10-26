@@ -52,6 +52,18 @@ inputs:
       macros (directory-scoped) when compile_commands.json isn't available.
       Must be a relative path within the repository (to the file itself, not its containing directory).
     required: false
+  defines:
+    description: >
+      Optional macros the build passes with -D, one per line (NAME or NAME=VALUE), or a JSON array of
+      strings. They select the #if branches the parser reads (e.g. GPU_SUPPORT).
+    required: false
+    default: ''
+  cpp-std:
+    description: >
+      Optional C++ standard the syntactic parser evaluates #if for: c++11, c++14, c++17, c++20 or c++23.
+      If omitted, the standard the repository's top-level CMakeLists.txt names is used, else c++17.
+    required: false
+    default: ''
   parser-backend:
     description: >
       Optional C++ parser backend. If omitted, the control-plane uses 'syntactic' for C++

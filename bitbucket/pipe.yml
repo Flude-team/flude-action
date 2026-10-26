@@ -31,6 +31,10 @@ variables:
     default: ''
   - name: FLUDE_CMAKE_LISTS_PATH
     default: ''
+  - name: FLUDE_DEFINES
+    default: ''
+  - name: FLUDE_CPP_STD
+    default: ''
   - name: FLUDE_PARSER_BACKEND
     default: ''
   - name: FLUDE_POLL_INTERVAL_SECONDS

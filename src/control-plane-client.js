@@ -90,7 +90,7 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   return parsed
 }
 
-export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath, compileCommandsContent, vcxprojPath, vcxprojConfiguration, vcxprojPlatform, bazelBuildPath, bazelTargetName, cmakeListsPath, parserBackend }) {
+export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, platform, format, strict, language, compileCommandsPath, compileCommandsContent, vcxprojPath, vcxprojConfiguration, vcxprojPlatform, bazelBuildPath, bazelTargetName, cmakeListsPath, parserBackend, defines, cppStd }) {
   const config = {
     language,
     // DEL-B75: compile_commands_path is kept too (harmless, and now actually wired through
@@ -109,6 +109,13 @@ export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, plat
   if (parserBackend) {
     config.parser_backend = parserBackend
   }
+  // Project settings: -D macros of the build and the C++ standard (both optional).
+  if (defines && defines.length > 0) {
+    config.defines = defines
+  }
+  if (cppStd) {
+    config.cpp_std = cppStd
+  }
 
   const body = await request(baseUrl, '/v1/jobs', {
     method: 'POST',
@@ -126,6 +133,26 @@ export async function submitJob(baseUrl, token, { repositoryUrl, commitSha, plat
     throw new ControlPlaneError('Control-plane accepted the job but did not return a job_id.', { body })
   }
   return body.job_id
+}
+
+// The `defines` input: a JSON array of strings, or one macro per line (`NAME` / `NAME=VALUE`). Not commas --
+// a macro value may contain them (`F(a,b)=a+b`).
+export function parseDefines(text) {
+  const value = (text || '').trim()
+  if (value === '') return []
+  if (value.startsWith('[')) {
+    let parsed
+    try {
+      parsed = JSON.parse(value)
+    } catch (e) {
+      throw new Error(`Invalid 'defines': not a JSON array (${e.message}).`)
+    }
+    if (!Array.isArray(parsed) || !parsed.every((d) => typeof d === 'string')) {
+      throw new Error("Invalid 'defines': the JSON form must be an array of strings.")
+    }
+    return parsed.map((d) => d.trim()).filter((d) => d !== '')
+  }
+  return value.split(/\r?\n/).map((d) => d.trim()).filter((d) => d !== '')
 }
 
 export async function getJobStatus(baseUrl, token, jobId) {

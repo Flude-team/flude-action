@@ -2,7 +2,7 @@ import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { getInput, getBooleanInput } from './github-input.js'
 import { setOutput, logNotice, logError, logWarning } from './github-output.js'
-import { submitJob, RateLimitError, ControlPlaneError } from './control-plane-client.js'
+import { submitJob, parseDefines, RateLimitError, ControlPlaneError } from './control-plane-client.js'
 import { pollUntilTerminal, describeTerminalStatus } from './poll.js'
 import { downloadResult, inferResultFilename } from './download.js'
 import { reportGitHubFindings } from './github-reporting.js'
@@ -65,6 +65,8 @@ export async function run() {
   const bazelBuildPath = getInput('bazel-build-path')
   const bazelTargetName = getInput('bazel-target-name')
   const cmakeListsPath = getInput('cmake-lists-path')
+  const defines = parseDefines(getInput('defines'))
+  const cppStd = getInput('cpp-std')
   const pollIntervalSeconds = Number(getInput('poll-interval-seconds') || '10')
   const maxWaitSeconds = Number(getInput('max-wait-seconds') || '900')
 
@@ -101,6 +103,8 @@ export async function run() {
     bazelTargetName,
     cmakeListsPath,
     parserBackend,
+    defines,
+    cppStd,
     format,
     strict,
   })

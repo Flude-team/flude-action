@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { withMockServer } from '../test-support/helpers.js'
-import { submitJob, getJobStatus, ControlPlaneError, RateLimitError } from '../src/control-plane-client.js'
+import { submitJob, parseDefines, getJobStatus, ControlPlaneError, RateLimitError } from '../src/control-plane-client.js'
 
 const basePayload = {
   repositoryUrl: 'https://github.com/acme/widget.git',
@@ -488,3 +488,36 @@ test('mock control-plane enforces server validation rules for config.parser_back
 })
 
 
+
+test('submitJob sends defines and cpp_std only when given', async () => {
+  const bodies = []
+  const server = createServer((req, res) => {
+    let raw = ''
+    req.on('data', (chunk) => { raw += chunk })
+    req.on('end', () => {
+      bodies.push(JSON.parse(raw))
+      res.writeHead(202, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ job_id: 'test-id' }))
+    })
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const baseUrl = `http://127.0.0.1:${server.address().port}`
+  try {
+    await submitJob(baseUrl, 'test-token', { ...basePayload, defines: ['GPU_SUPPORT', 'LEVEL=2'], cppStd: 'c++11' })
+    await submitJob(baseUrl, 'test-token', { ...basePayload, defines: [], cppStd: '' })
+    assert.deepEqual(bodies[0].config.defines, ['GPU_SUPPORT', 'LEVEL=2'])
+    assert.equal(bodies[0].config.cpp_std, 'c++11')
+    assert.ok(!('defines' in bodies[1].config))
+    assert.ok(!('cpp_std' in bodies[1].config))
+  } finally {
+    server.close()
+  }
+})
+
+test('parseDefines: one per line, or a JSON array; never split on commas', () => {
+  assert.deepEqual(parseDefines(''), [])
+  assert.deepEqual(parseDefines('GPU_SUPPORT\r\nF(a,b)=a+b\n\n  LEVEL=2 '), ['GPU_SUPPORT', 'F(a,b)=a+b', 'LEVEL=2'])
+  assert.deepEqual(parseDefines('["A", " B=1 ", ""]'), ['A', 'B=1'])
+  assert.throws(() => parseDefines('[not json'), /not a JSON array/)
+  assert.throws(() => parseDefines('[1, 2]'), /array of strings/)
+})
