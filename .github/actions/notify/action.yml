@@ -21,8 +21,28 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Found 2026-11-01 (live e2e fixture, failed run 40532332968): the Telegram secrets were never set in that
+    # repository, appleboy/telegram-action stopped with "missing telegram token or user list", the issue step below
+    # was skipped because the step before it had failed, and the caller's `continue-on-error: true` reported the whole
+    # notifier as successful -- no alert for a week. So: say loudly when Telegram is not configured, never let a
+    # Telegram failure skip the issue, and create the issue under always().
+    - name: Check alert channels
+      id: channels
+      shell: bash
+      env:
+        TELEGRAM_TOKEN: ${{ inputs.telegram_token }}
+        TELEGRAM_TO: ${{ inputs.telegram_to }}
+      run: |
+        if [ -n "$TELEGRAM_TOKEN" ] && [ -n "$TELEGRAM_TO" ]; then
+          echo "telegram=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "telegram=false" >> "$GITHUB_OUTPUT"
+          echo "::warning title=Telegram alert is not configured::telegram_token or telegram_to is empty (are the repository secrets TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID set?). No Telegram message is sent; a failure still opens a GitHub issue."
+        fi
+
     - name: Send Telegram Alert
-      if: contains(github.event.head_commit.message || github.event.commits[0].message || github.event.pull_request.title || '', '[mute]') == false
+      if: steps.channels.outputs.telegram == 'true' && contains(github.event.head_commit.message || github.event.commits[0].message || github.event.pull_request.title || '', '[mute]') == false
+      continue-on-error: true
       uses: appleboy/telegram-action@v1.0.1
       with:
         to: ${{ inputs.telegram_to }}
@@ -35,7 +55,7 @@ runs:
           Author: ${{ github.actor }}
 
     - name: Create GitHub Issue on Failure
-      if: inputs.status == 'failure' && inputs.create_issue == 'true'
+      if: always() && inputs.status == 'failure' && inputs.create_issue == 'true'
       uses: actions/github-script@v9
       with:
         github-token: ${{ inputs.github_token }}
