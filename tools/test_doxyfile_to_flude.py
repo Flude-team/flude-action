@@ -201,6 +201,15 @@ class SwitchTests(TempDirTest):
         self.assertEqual(result.settings["exclude_symbols"], ["ns::detail", "*::impl"])
         self.assertTrue(any("EXCLUDE_SYMBOLS" in n for n in result.notes))
 
+    def test_an_empty_exclude_symbols_entry_is_dropped_like_doxygen_does(self):
+        # Doxygen 1.9.8: `EXCLUDE_SYMBOLS = ""` excludes nothing; the worker rejects `exclude_symbols: ['']`.
+        for text in ('EXCLUDE_SYMBOLS = ""\n', 'EXCLUDE_SYMBOLS = "  "\n', "EXCLUDE_SYMBOLS =\n"):
+            result = self.convert(text)
+            self.assertNotIn("exclude_symbols", result.settings, text)
+            self.assertEqual([], [w for w in result.warnings if "EXCLUDE_SYMBOLS" in w], text)
+        mixed = self.convert('EXCLUDE_SYMBOLS = "" ns::detail ""\n')
+        self.assertEqual(mixed.settings["exclude_symbols"], ["ns::detail"])
+
     def test_recursive_other_than_yes_is_noted(self):
         self.assertTrue(any("RECURSIVE" in n for n in self.convert("RECURSIVE = NO\n").notes))
         self.assertTrue(any("RECURSIVE" in n for n in self.convert("").notes))

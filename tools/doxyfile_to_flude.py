@@ -324,6 +324,9 @@ def _defines(tokens: Sequence[str], warnings: List[str]) -> List[str]:
 def _symbols(tokens: Sequence[str], warnings: List[str]) -> List[str]:
     result = []  # type: List[str]
     for token in tokens:
+        if not token.strip():
+            # `EXCLUDE_SYMBOLS = ""` is an empty list to Doxygen (checked with 1.9.8); the worker rejects an empty entry.
+            continue
         if len(token) > MAX_EXCLUDE_SYMBOL_LENGTH:
             warnings.append("EXCLUDE_SYMBOLS: {!r}... is longer than {} characters; skipped".format(token[:40], MAX_EXCLUDE_SYMBOL_LENGTH))
         elif token not in result:
