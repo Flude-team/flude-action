@@ -238,8 +238,8 @@ test('submitJob explains an HTTP 403 parser_backend_not_allowed instead of blami
       assert.ok(err instanceof ControlPlaneError)
       assert.equal(err.status, 403)
       assert.equal(err.body.error, 'parser_backend_not_allowed')
-      assert.match(err.message, /refused the job/)
-      assert.match(err.message, /doxygen/)
+      // the sentence of the control-plane is shown as it is
+      assert.equal(err.message, "parser_backend 'doxygen' is not available for this account")
       assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
       assert.doesNotMatch(err.message, /free-tier gate/)
     }
@@ -273,9 +273,7 @@ test('submitJob throws free-tier gate ControlPlaneError on HTTP 403 with rejecte
       assert.fail('Should have thrown')
     } catch (err) {
       assert.ok(err instanceof ControlPlaneError)
-      assert.match(err.message, /rejected by the free-tier gate/)
-      assert.match(err.message, /repository too large/)
-      assert.match(err.message, /Size is 500MB/)
+      assert.equal(err.message, 'Size is 500MB')
       assert.doesNotMatch(err.message, /renew it at app.flude.guide/)
     }
   })
@@ -520,4 +518,39 @@ test('parseDefines: one per line, or a JSON array; never split on commas', () =>
   assert.deepEqual(parseDefines('["A", " B=1 ", ""]'), ['A', 'B=1'])
   assert.throws(() => parseDefines('[not json'), /not a JSON array/)
   assert.throws(() => parseDefines('[1, 2]'), /array of strings/)
+})
+
+test('submitJob shows the sentence of a refusal and its help link as they come (K15)', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-503-capacity.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof ControlPlaneError)
+      assert.equal(err.status, 503)
+      assert.equal(
+        err.message,
+        'The service is at capacity right now. Please try again after 00:00 UTC. See https://docs.example/saas/errors#rejected_daily_capacity.'
+      )
+    }
+  })
+})
+
+test('submitJob turns a 429 with a sentence into a RateLimitError that carries that sentence (K15)', async () => {
+  await withMockServer({}, async (baseUrl) => {
+    try {
+      await submitJob(baseUrl, 'test-token', {
+        ...basePayload,
+        repositoryUrl: 'https://github.com/acme/scenario-429-message.git',
+      })
+      assert.fail('Should have thrown')
+    } catch (err) {
+      assert.ok(err instanceof RateLimitError)
+      assert.equal(err.message, 'Your account has reached its daily limit of jobs. Please try again after 00:00 UTC.')
+      assert.doesNotMatch(err.message, /5 jobs/)
+    }
+  })
 })

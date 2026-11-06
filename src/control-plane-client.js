@@ -23,6 +23,13 @@ export class RateLimitError extends ControlPlaneError {
   }
 }
 
+// The sentence of a refused request from the control-plane, with the link to the help page when it sends one; null when
+// the body has no such sentence.
+function refusalText(parsed) {
+  if (!parsed || typeof parsed.error !== 'string' || typeof parsed.message !== 'string' || !parsed.message) return null
+  return typeof parsed.help_url === 'string' && parsed.help_url ? `${parsed.message} See ${parsed.help_url}.` : parsed.message
+}
+
 async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
   const url = new URL(path, baseUrl).toString()
   const response = await fetch(url, {
@@ -44,6 +51,14 @@ async function request(baseUrl, path, { method = 'GET', token, body } = {}) {
       // Non-JSON body (e.g. an upstream proxy error page) - surface it raw.
       parsed = { raw: rawText }
     }
+  }
+
+  // K15: a refusal that carries its own sentence (`message`, and `help_url` once the help page exists) is shown as it is.
+  // The older answers without a message still get the texts below.
+  const refusal = response.ok ? null : refusalText(parsed)
+  if (refusal) {
+    const ErrorClass = response.status === 429 ? RateLimitError : ControlPlaneError
+    throw new ErrorClass(refusal, { status: response.status, body: parsed })
   }
 
   if (response.status === 401 || response.status === 403) {

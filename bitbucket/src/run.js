@@ -135,7 +135,7 @@ if (process.env.BITBUCKET_BUILD_NUMBER) {
     if (error instanceof RateLimitError) {
       console.error(error.message)
     } else if (error instanceof ControlPlaneError) {
-      console.error(`${error.message}${error.body ? ` (response: ${JSON.stringify(error.body)})` : ''}`)
+      console.error(`${error.message}${error.body && !error.body.message ? ` (response: ${JSON.stringify(error.body)})` : ''}`)
     } else {
       console.error(error.stack || error.message)
     }

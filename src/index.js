@@ -173,7 +173,8 @@ if (process.env.GITHUB_ACTIONS === 'true' && isEntryPoint()) {
     if (error instanceof RateLimitError) {
       logError(error.message)
     } else if (error instanceof ControlPlaneError) {
-      logError(`${error.message}${error.body ? ` (response: ${JSON.stringify(error.body)})` : ''}`)
+      // a refusal with its own sentence is complete; the raw response is only for answers that have none
+      logError(`${error.message}${error.body && !error.body.message ? ` (response: ${JSON.stringify(error.body)})` : ''}`)
     } else {
       logError(error.stack || error.message)
     }

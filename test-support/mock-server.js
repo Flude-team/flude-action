@@ -55,6 +55,21 @@ export function createMockControlPlane({ token = 'test-token', resultBody = 'fak
 
       const repoUrl = payload.repository_url || ''
 
+      if (repoUrl.includes('scenario-429-message')) {
+        // the real control-plane's body once it carries the sentence of the catalog (K15)
+        send(429, { error: 'rate_limit_exceeded', message: 'Your account has reached its daily limit of jobs. Please try again after 00:00 UTC.' })
+        return
+      }
+
+      if (repoUrl.includes('scenario-503-capacity')) {
+        send(503, {
+          error: 'rejected_daily_capacity',
+          message: 'The service is at capacity right now. Please try again after 00:00 UTC.',
+          help_url: 'https://docs.example/saas/errors#rejected_daily_capacity'
+        })
+        return
+      }
+
       if (repoUrl.includes('scenario-rate-limited')) {
         send(429, { error: 'rate limit exceeded' })
         return
