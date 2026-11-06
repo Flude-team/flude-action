@@ -15,30 +15,29 @@ dependencies** — the control-plane clones your public repository itself.
 > README for why) and reporting via Bitbucket's Code Insights API instead of
 > SARIF/Code Quality JSON.
 
-> **Status: Stage 1 / pre-release.** The control-plane API this action talks
-> to (`DEL-B23`) does not exist yet. Everything below the "Development &
-> testing" section describes the assumed contract this action was built
-> against — treat endpoint shapes and status strings as provisional until
-> reconciled with the real control-plane.
+> **New here?** Follow the step-by-step guide, [Getting started with Flude
+> SaaS](https://user.flude.guide/docs/saas-getting-started): account, API key, workflow, first
+> run. This README is the reference of the action's inputs and outputs.
 
-## What Stage 1 covers
+## What the free plan covers
 
 - Public repositories only, on **personal accounts** (not organizations).
-- Filtered source volume (matching Flude's `file_patterns`) **≤ 5 MB**.
-- Anything outside those bounds is a paid scenario that Stage 1 doesn't serve
-  yet — the control-plane reports it as a rejected job, and this action fails
-  the step with a clear explanation instead of a generic error.
-- Rate limit: 5 jobs/day during an account's first week, then 1/day.
+- A limited size of the sources selected for documentation and of the repository, and a daily
+  limit of jobs per account. The current values are on the
+  [getting started page](https://user.flude.guide/docs/saas-getting-started#free-plan-limits);
+  they can change while the service is being tested.
+- Anything outside those bounds is refused by the control-plane, and this action fails the step
+  with the message the control-plane sends: what happened, what to do, and a link to the section
+  of [Errors and refusals](https://user.flude.guide/docs/saas-errors) for that case.
 
 ## Usage
 
 ```yaml
-- uses: flude/flude-action@v1
+- uses: Flude-team/flude-action@main
   id: flude
   with:
     api-token: ${{ secrets.FLUDE_API_TOKEN }}
-    api-base-url: ${{ vars.FLUDE_CONTROL_PLANE_URL }} # no public control-plane exists yet, see Status above
-    format: hugo_markdown
+    api-base-url: https://control-plane.flude.guide
 
 - run: unzip "${{ steps.flude.outputs.result-path }}" -d docs-output
 
@@ -53,13 +52,12 @@ dependencies** — the control-plane clones your public repository itself.
 #### Example with C++ syntactic parser backend
 
 ```yaml
-- uses: flude/flude-action@v1
+- uses: Flude-team/flude-action@main
   id: flude
   with:
     api-token: ${{ secrets.FLUDE_API_TOKEN }}
-    api-base-url: ${{ vars.FLUDE_CONTROL_PLANE_URL }}
+    api-base-url: https://control-plane.flude.guide
     language: cpp
-    parser-backend: syntactic
     compile-commands-path: compile_commands.json
 ```
 
@@ -69,9 +67,8 @@ control-plane clones the repository itself.
 
 ### Getting an API token
 
-Create one at `app.flude.guide` (`DEL-B41`, built in parallel — may not exist
-yet either) by logging in with GitHub/GitLab/Bitbucket OAuth and creating a
-Clerk API Key through the account page. Store it as a secret
+Create one at [app.flude.guide](https://app.flude.guide) by logging in with
+GitHub, GitLab or Bitbucket and creating an API key on the account page. Store it as a secret
 (`FLUDE_API_TOKEN`) on your repository or organization. There is no OAuth flow
 inside the CI run itself — the token is a long-lived Bearer credential you
 create once, by hand.
@@ -88,7 +85,7 @@ and the data collected while your job runs (`DEL-A12`).
 | `defines` | no | — | Macros your build passes with `-D`, one per line (`NAME` or `NAME=VALUE`) or a JSON array of strings; they select the `#if` branches the parser reads (e.g. `GPU_SUPPORT`). GitLab/Bitbucket: `FLUDE_DEFINES`. |
 | `cpp-std` | no | — | C++ standard the syntactic parser evaluates `#if` for: `c++11`, `c++14`, `c++17`, `c++20` or `c++23`. If omitted, the standard the repository's top-level `CMakeLists.txt` names (`CMAKE_CXX_STANDARD`, `cxx_std_NN`) is used, else `c++17`. GitLab/Bitbucket: `FLUDE_CPP_STD`. |
 | `parser-backend` | no | — | Optional C++ parser backend. If omitted, the control-plane uses `syntactic` for C++ jobs; the vcxproj/bazel/cmake inputs are read by the syntactic backend (macros, and include directories declared inside the repository). `doxygen` is not available to external accounts (the control-plane answers HTTP 403 `parser_backend_not_allowed`). |
-| `format` | no | `hugo_markdown` | `hugo_markdown` or `html`. |
+| `format` | no | `hugo_markdown` | `hugo_markdown`, the only format available at the moment. |
 | `strict` | no | `false` | Enable Strict Compilation Mode. |
 | `poll-interval-seconds` | no | `10` | Delay between `GET /jobs/{id}` polls. |
 | `max-wait-seconds` | no | `900` | Client-side safety net only — see below. |
