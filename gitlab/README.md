@@ -58,7 +58,7 @@ required CI/CD variables in **Settings > CI/CD > Variables** (mask both):
 | Variable | Required | Description |
 | --- | --- | --- |
 | `FLUDE_API_TOKEN` | yes | Clerk API Key from `app.flude.guide`, sent as `Authorization: Bearer <token>`. Same token mechanism as the GitHub Action (`DEL-B22`/`DEL-B41`) - a long-lived credential you create once by hand, no OAuth flow inside the CI run itself. |
-| `FLUDE_API_BASE_URL` | yes | Base URL of the control-plane API. Example: `https://flude-worker-controlplane-555636434059.us-central1.run.app`. Point this at a local mock while developing locally (see "Development & testing" below). |
+| `FLUDE_API_BASE_URL` | yes | Base URL of the control-plane API. Example: `https://control-plane.flude.guide`. Point this at a local mock while developing locally (see "Development & testing" below). |
 
 Optional variables, all with defaults (override under the included job's
 `variables:` in your own `.gitlab-ci.yml`, or set project-level CI/CD
@@ -183,16 +183,16 @@ API contract.
 ### Real GitLab-runner verification (2026-09-03)
 
 Done on a throwaway public test project on gitlab.com
-(`derryk/flude-gitlab-del-b26-test`, owner's own account), against the
+(the owner's own account), against the
 `with-codequality` mock started in the job's own `before_script` (same
 technique as `../.github/workflows/e2e-mock.yml` on the GitHub side) - not
 against the real control-plane.
 
 - **Job succeeds end-to-end on a real shared runner** - MR
-  [`!1`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/merge_requests/1),
+  `!1`,
   pipeline
-  [`#2817229456`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/pipelines/2817229456),
-  job [`16287818788`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/jobs/16287818788):
+  `#2817229456`,
+  job `16287818788`:
   clone → mock start → submit → poll (`running...`) → download → `5
   finding(s) written to gl-code-quality-report.json` → `Job succeeded`.
   (The *first* attempt on this same MR genuinely failed first -
@@ -220,9 +220,9 @@ against the real control-plane.
 - **Findings render in a real MR's diff/overview widget** - the harder,
   genuinely non-obvious part. MR `!1` merged first (`main` now has its own
   `.gitlab-ci.yml` and a baseline pipeline,
-  [`#2817375023`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/pipelines/2817375023),
+  `#2817375023`,
   with the same 5 mock findings). A **second** MR,
-  [`!2`](https://gitlab.com/derryk/flude-gitlab-del-b26-test/-/merge_requests/2)
+  `!2`
   (`MOCK_FINDINGS_COUNT: '6'` instead of the default 5 - see the mock change
   below), was needed to actually see anything: GitLab's Code Quality MR
   widget **diffs the head pipeline's report against the target branch's own
@@ -264,7 +264,7 @@ did exercise the bare `include: remote:` in isolation).
   - `run.js`'s and `gitlab-reporting.js`'s own logic (unit tests and a real local invocation against the mock).
   - The template's actual mechanics on a real GitLab shared runner (clone, mock start, submit/poll/download, artifact upload, `include: remote:` resolution, and MR-widget rendering of new findings).
   - The `flude.gitlab-ci.yml` template supports `$CI_PIPELINE_SOURCE == "schedule"`.
-  - The real test project `derryk/flude-gitlab-del-b26-test` has a C++ fixture (`UndocumentedWidget`) and a `verify-flude` job that successfully parses and validates the real contents of `gl-code-quality-report.json`.
+  - The test project has a C++ fixture (`UndocumentedWidget`) and a `verify-flude` job that successfully parses and validates the real contents of `gl-code-quality-report.json`.
 - **Not yet verified (pending real run)**:
   - A full live run against the real control-plane with a real Clerk token and real free-gate evaluation. The infrastructure is ready, but the CI/CD variables and Pipeline Schedule in the test project are configured manually by the owner and the final run has not yet completed.
 

@@ -82,6 +82,6 @@ flude:
     # (confirmed against a real failing `needs: ["flude"]` consumer job: ENOENT
     # on gl-code-quality-report.json despite the `flude` job uploading it
     # successfully). `paths:` makes the same file available for a job like
-    # derryk/flude-gitlab-del-b26-test's `verify-flude` to actually read it.
+    # a test project's `verify-flude` to actually read it.
 
 

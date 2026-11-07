@@ -36,8 +36,8 @@ other users, degrade the service, or run automated scans against it at a rate th
 
 ## Supported versions
 
-Only the current `main` branch and the action referenced as `Flude-team/flude-action@main` receive fixes. The service
-is in an open test (Stage 1): public repositories on personal accounts only, filtered source of at most 5 MB.
+The latest `v1.x` release (the moving `v1` tag, referenced as `Flude-team/flude-action@v1`) and the `main` branch
+receive fixes. The service is in an open test (Stage 1): public repositories on personal accounts only, filtered source of at most 5 MB.
 
 ## Scope
 
