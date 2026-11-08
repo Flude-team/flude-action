@@ -67,6 +67,8 @@ jobs:
   # via unit tests against the mock in isolation.
   e2e-sarif:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
