@@ -43,7 +43,7 @@ runs:
     - name: Send Telegram Alert
       if: steps.channels.outputs.telegram == 'true' && contains(github.event.head_commit.message || github.event.commits[0].message || github.event.pull_request.title || '', '[mute]') == false
       continue-on-error: true
-      uses: appleboy/telegram-action@v1.0.1
+      uses: appleboy/telegram-action@221e6b684967abe813051ee4a37dd61770a83ad3 # v1.0.1
       with:
         to: ${{ inputs.telegram_to }}
         token: ${{ inputs.telegram_token }}
