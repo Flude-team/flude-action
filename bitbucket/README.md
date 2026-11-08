@@ -1,5 +1,8 @@
 # Flude Bitbucket Pipe (DEL-B39)
 
+<!-- UNDER-CONSTRUCTION-NOTICE -->
+> **Flude is under construction.** Features, commands, limits and behavior described here may be incomplete or change without notice.
+
 A Bitbucket Pipe around the same control-plane client used by the GitHub
 Action (`../`) and the GitLab CI template (`../gitlab/`) - `../src/control-plane-client.js`,
 `../src/poll.js`, `../src/download.js`, `../src/zip-extract.js`, and

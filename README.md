@@ -1,5 +1,8 @@
 # Flude Docs (GitHub Action)
 
+<!-- UNDER-CONSTRUCTION-NOTICE -->
+> **Flude is under construction.** Features, commands, limits and behavior described here may be incomplete or change without notice.
+
 A thin GitHub Action client for the Flude SaaS control-plane. It never bundles
 the Flude engine, never touches your source on the runner beyond reading
 `GITHUB_REPOSITORY`/`GITHUB_SHA`, and has **zero third-party runtime

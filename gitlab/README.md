@@ -1,5 +1,8 @@
 # Flude GitLab CI Template (DEL-B26)
 
+<!-- UNDER-CONSTRUCTION-NOTICE -->
+> **Flude is under construction.** Features, commands, limits and behavior described here may be incomplete or change without notice.
+
 A thin `.gitlab-ci.yml` template around the same control-plane client used by
 the GitHub Action in `../` (`../src/control-plane-client.js`, `../src/poll.js`,
 `../src/download.js`, `../src/zip-extract.js` are reused directly via
