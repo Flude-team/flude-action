@@ -29,6 +29,7 @@ python doxyfile_to_flude.py Doxyfile --append .flude.yml   # add the block to th
 | `INCLUDE_PATH` | `include_paths` |
 | `EXTRACT_PRIVATE = YES` | `include_private: true` |
 | `EXTRACT_ANON_NSPACES` | `extract_anon_namespaces` |
+| `WARN_NO_PARAMDOC` | `warn_no_paramdoc` |
 | `EXCLUDE_SYMBOLS` | `exclude_symbols` |
 
 Tests: `python -m unittest discover tools` (PyYAML is used only to re-read the output, and those tests are
