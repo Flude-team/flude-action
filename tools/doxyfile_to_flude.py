@@ -61,6 +61,7 @@ HANDLED_KEYS = frozenset(
         "EXTRACT_ANON_NSPACES",
         "EXCLUDE_SYMBOLS",
         "RECURSIVE",
+        "WARN_NO_PARAMDOC",
     }
 )
 
@@ -375,6 +376,14 @@ def convert(parsed: ParsedDoxyfile, root: Path, base: Path) -> Conversion:
         result.notes.append(
             "EXTRACT_ANON_NSPACES is not set: Doxygen's default NO hides anonymous namespaces; Flude extracts "
             "them unless extract_anon_namespaces is false"
+        )
+    paramdoc = _flag(parsed, "WARN_NO_PARAMDOC", result.warnings)
+    if paramdoc is not None:
+        result.settings["warn_no_paramdoc"] = paramdoc
+    elif "WARN_NO_PARAMDOC" not in settings:
+        result.notes.append(
+            "WARN_NO_PARAMDOC is not set: Doxygen's default NO does not warn about undocumented parameters and return "
+            "values; the Flude audit report lists them unless warn_no_paramdoc is false"
         )
     put("exclude_symbols", _symbols(settings.get("EXCLUDE_SYMBOLS", []), result.warnings))
     if "EXCLUDE_SYMBOLS" in settings:

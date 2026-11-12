@@ -191,6 +191,15 @@ class SwitchTests(TempDirTest):
         self.assertNotIn("extract_anon_namespaces", absent.settings)
         self.assertTrue(any("EXTRACT_ANON_NSPACES" in n for n in absent.notes))
 
+    def test_warn_no_paramdoc_is_written_when_the_doxyfile_sets_it(self):
+        self.assertIs(self.convert("WARN_NO_PARAMDOC = YES\n").settings["warn_no_paramdoc"], True)
+        self.assertIs(self.convert("WARN_NO_PARAMDOC = NO\n").settings["warn_no_paramdoc"], False)
+        absent = self.convert("")
+        self.assertNotIn("warn_no_paramdoc", absent.settings)
+        self.assertTrue(any("WARN_NO_PARAMDOC" in n for n in absent.notes))
+        set_to_no = self.convert("WARN_NO_PARAMDOC = NO\n")
+        self.assertNotIn("WARN_NO_PARAMDOC", [key for key, _ in set_to_no.not_transferred])
+
     def test_a_value_that_is_not_yes_or_no_is_a_warning(self):
         result = self.convert("EXTRACT_PRIVATE = MAYBE\n")
         self.assertNotIn("include_private", result.settings)
