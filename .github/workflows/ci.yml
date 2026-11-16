@@ -39,7 +39,9 @@ jobs:
 
   tools:
     # tools/doxyfile_to_flude.py: standard library only; the tests re-read its YAML with PyYAML.
-    runs-on: ubuntu-latest
+    # Pinned to ubuntu-24.04: `ubuntu-latest` is Ubuntu 26.04 since 2026-11, which has no Python 3.9, and 3.9 stays in the
+    # matrix on purpose (RHEL 9 ships it). Revisit when the ubuntu-24.04 image is retired.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     strategy:
@@ -48,7 +50,7 @@ jobs:
         python-version: ['3.9', '3.13']
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install pyyaml
