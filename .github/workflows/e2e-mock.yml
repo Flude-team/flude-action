@@ -120,9 +120,17 @@ jobs:
           grep -q 'RULE-14' "${{ steps.flude.outputs.summary-path }}"
           grep -q 'finding number 14' "${{ steps.flude.outputs.summary-path }}"
 
-      # No Send Alerts step here on purpose - e2e already sends one Telegram
-      # alert for this workflow run. Two jobs both notifying produced two
-      # near-identical messages per push (same workflow name, same commit),
-      # which read as a duplicate rather than two distinct signals. If
-      # e2e-sarif fails on its own (e2e passing), that's still visible in the
-      # GitHub Actions UI - just not paged to Telegram.
+      # No success alert here on purpose - e2e already sends one Telegram alert for this workflow run. Two jobs both
+      # notifying produced two near-identical messages per push (same workflow name, same commit), which read as a
+      # duplicate rather than two distinct signals. A FAILURE of this job is paged (2026-11-18): it used to be visible
+      # only in the GitHub Actions UI, so an e2e-sarif failure with e2e passing reached nobody.
+      - name: Send Alert on Failure
+        if: failure()
+        continue-on-error: true  # a missing Telegram secret must never fail the job
+        uses: ./.github/actions/notify
+        with:
+          status: failure
+          telegram_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          create_issue: 'false'

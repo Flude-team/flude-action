@@ -55,3 +55,17 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install pyyaml
       - run: python -m unittest discover tools
+
+      # Failure-only alert (2026-11-18, K37 check): this job had none, so its failure turned the run red on GitHub
+      # and nobody was told. Failure-only on purpose: the workflow's other job already sends the usual alert,
+      # a second alert on every success would read as a duplicate.
+      - name: Send Alert on Failure
+        if: failure()
+        continue-on-error: true  # a missing Telegram secret must never fail the job
+        uses: ./.github/actions/notify
+        with:
+          status: failure
+          telegram_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          create_issue: 'false'
